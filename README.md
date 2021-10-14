@@ -1,6 +1,6 @@
 # IPFS-Nucleus
 
-IPFS-Nucleus is a minimal block daemon for IPLD based services. You could call it an IPLDaemon.
+IPFS-Nucleus is a minimal block daemon for IPLD based services. You could call it an **IPLDaemon**.
 
 It implements the following http api calls from IPFS:
 * id
