@@ -15,7 +15,7 @@ As well as implementing the p2p http proxy.
 
 It is designed as a drop in replacment for IPFS with the minimal functionality that [Peergos](https://github.com/peergos/peergos) needs to operate, including running an external GC. It includes support for flatfs, leveldb and S3 based blockstores.
 
-It will read its config from a prior existing ipfs config file if present, or create one with the relevant parameters.
+It will read its config from a prior existing ipfs config file if present, or create one with the relevant parameters. It uses a v0 blockstore (cids) rather than a v1 (multihashes).
 
 ## Building
 > go build daemon/ipfs-nucleus.go
