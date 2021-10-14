@@ -3,11 +3,15 @@ package ipfsnucleus
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"testing"
 
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	blocks "github.com/ipfs/go-block-format"
+	"github.com/ipfs/go-cid"
+	mh "github.com/multiformats/go-multihash"
+	datastore "github.com/ipfs/go-datastore"
+	dssync "github.com/ipfs/go-datastore/sync"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -15,13 +19,18 @@ import (
 	multihash "github.com/multiformats/go-multihash"
 )
 
-var secret = "2cc2c79ea52c9cc85dfd3061961dd8c4230cce0b09f182a0822c1536bf1d5f21"
+func NewInMemoryDatastore() datastore.Batching {
+	return dssync.MutexWrap(datastore.NewMapDatastore())
+}
 
 func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	ds1 := NewInMemoryDatastore()
 	ds2 := NewInMemoryDatastore()
+        bs1 := blockstore.NewBlockstore(ds1)
+        bs2 := blockstore.NewBlockstore(ds2)
+        
 	priv1, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -31,16 +40,10 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 		t.Fatal(err)
 	}
 
-	psk, err := hex.DecodeString(secret)
-	if err != nil {
-		t.Fatal(t)
-	}
-
 	listen, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/0")
 	h1, dht1, err := SetupLibp2p(
 		ctx,
 		priv1,
-		psk,
 		[]multiaddr.Multiaddr{listen},
 		nil,
 		Libp2pOptionsExtra...,
@@ -57,7 +60,6 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 	h2, dht2, err := SetupLibp2p(
 		ctx,
 		priv2,
-		psk,
 		[]multiaddr.Multiaddr{listen},
 		nil,
 		Libp2pOptionsExtra...,
@@ -80,12 +82,12 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 			}
 		}
 	}
-	p1, err = New(ctx, ds1, h1, dht1, nil)
+	p1, err = New(ctx, bs1, ds1, h1, dht1, nil)
 	if err != nil {
 		closer(t)
 		t.Fatal(err)
 	}
-	p2, err = New(ctx, ds2, h2, dht2, nil)
+	p2, err = New(ctx, bs2, ds2, h2, dht2, nil)
 	if err != nil {
 		closer(t)
 		t.Fatal(err)
@@ -170,27 +172,25 @@ func TestSession(t *testing.T) {
 	}
 }
 
-func TestFiles(t *testing.T) {
+func TestBlock(t *testing.T) {
 	p1, p2, closer := setupPeers(t)
 	defer closer(t)
 
 	content := []byte("hola")
-	buf := bytes.NewReader(content)
-	n, err := p1.AddFile(context.Background(), buf, nil)
+        hash, _ := mh.Sum(content, mh.SHA2_256, -1)
+        c := cid.NewCidV1(cid.Raw, hash)
+        block, _ := blocks.NewBlockWithCid(content, c)
+	err := p1.PutBlock(block)
+        if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := p2.GetBlock(c)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rsc, err := p2.GetFile(context.Background(), n.Cid())
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rsc.Close()
-
-	content2, err := ioutil.ReadAll(rsc)
-	if err != nil {
-		t.Fatal(err)
-	}
+	content2 := res.RawData()
 
 	if !bytes.Equal(content, content2) {
 		t.Error(string(content))
