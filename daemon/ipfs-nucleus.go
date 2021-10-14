@@ -12,6 +12,7 @@ import (
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
+	s3ds "github.com/ipfs/go-ds-s3"
 	manet "github.com/multiformats/go-multiaddr/net"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
@@ -42,6 +43,31 @@ func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
 			panic(err)
 		}
 		return leveldb
+	}
+	if config.Type == "s3ds" {
+		accessKey := config.Params["accessKey"].(string)
+		bucket := config.Params["bucket"].(string)
+		region := config.Params["region"].(string)
+		regionEndpoint := config.Params["regionEndpoint"].(string)
+		secretKey := config.Params["secretKey"].(string)
+		cfg := s3ds.Config{
+			Region:              region,
+			Bucket:              bucket,
+			AccessKey:           accessKey,
+			SecretKey:           secretKey,
+			SessionToken:        "",
+			RootDirectory:       "",
+			Workers:             0,
+			RegionEndpoint:      regionEndpoint,
+			CredentialsEndpoint: "",
+		}
+		s3,err := s3ds.NewS3Datastore(cfg)
+                if err != nil {
+			panic(err)
+		}
+		mount := dsmount.Mount{Prefix: ds.NewKey(config.MountPoint), Datastore: s3}
+		mds := dsmount.New([]dsmount.Mount{mount})
+		return mds
 	}
 	panic("Unknown datastore type: " + config.Type)
 }
