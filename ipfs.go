@@ -7,7 +7,7 @@ import (
 
 	"github.com/ipfs/go-bitswap"
 	"github.com/ipfs/go-bitswap/network"
-	blocks "github.com/ipfs/go-block-format"
+	//blocks "github.com/ipfs/go-block-format"
 	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
@@ -17,21 +17,17 @@ import (
 	provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
 	"github.com/ipfs/go-ipfs-provider/simple"
-	cbor "github.com/ipfs/go-ipld-cbor"
-	ipld "github.com/ipfs/go-ipld-format"
+	ipld "github.com/ipld/go-ipld-prime"
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/ipfs/go-merkledag"
+	//"github.com/ipfs/go-merkledag"
 	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	routing "github.com/libp2p/go-libp2p-core/routing"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
+	_ "github.com/ipld/go-codec-dagpb"
+        _ "github.com/ipld/go-ipld-prime/codec/raw"
+        _ "github.com/ipld/go-ipld-prime/codec/dagcbor"
 )
-
-func init() {
-	ipld.Register(cid.DagProtobuf, merkledag.DecodeProtobufBlock)
-	ipld.Register(cid.Raw, merkledag.DecodeRawBlock)
-	ipld.Register(cid.DagCBOR, cbor.DecodeBlock) // need to decode CBOR
-}
 
 var logger = logging.Logger("ipfsnucleus")
 
@@ -63,14 +59,13 @@ type Peer struct {
 	store datastore.Batching
 
 	P2P             p2p.P2P
-	ipld.DAGService // become a DAG service
 	bstore          blockstore.Blockstore
 	bserv           blockservice.BlockService
 	reprovider      provider.System
 }
 
 // New creates an IPFS-Nucleus Peer. It uses the given datastore, libp2p Host and
-// Routing (DHT). Peer implements the ipld.DAGService interface.
+// Routing (DHT). Peer implements the DAGService interface.
 func New(
 	ctx context.Context,
 	blockstore blockstore.Blockstore,
@@ -101,11 +96,11 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	err = p.setupDAGService()
-	if err != nil {
-		p.bserv.Close()
-		return nil, err
-	}
+	//err = p.setupDAGService()
+	//if err != nil {
+	//	p.bserv.Close()
+	//	return nil, err
+	//}
 	err = p.setupReprovider()
 	if err != nil {
 		p.bserv.Close()
@@ -129,10 +124,10 @@ func (p *Peer) setupBlockService() error {
 	return nil
 }
 
-func (p *Peer) setupDAGService() error {
-	p.DAGService = merkledag.NewDAGService(p.bserv)
-	return nil
-}
+//func (p *Peer) setupDAGService() error {
+//	p.DAGService = merkledag.NewDAGService(p.bserv)
+//	return nil
+//}
 
 func (p *Peer) setupReprovider() error {
 	if p.cfg.Offline || p.cfg.ReprovideInterval < 0 {
@@ -214,13 +209,13 @@ func (p *Peer) Bootstrap(peers []peer.AddrInfo) {
 }
 
 // Session returns a session-based NodeGetter.
-func (p *Peer) Session(ctx context.Context) ipld.NodeGetter {
+/*func (p *Peer) Session(ctx context.Context) NodeGetter {
 	ng := merkledag.NewSession(ctx, p.DAGService)
 	if ng == p.DAGService {
 		logger.Warn("DAGService does not support sessions")
 	}
 	return ng
-}
+}*/
 
 // BlockStore offers access to the blockstore underlying the Peer's DAGService.
 func (p *Peer) BlockStore() blockstore.Blockstore {
@@ -270,7 +265,7 @@ func (p *Peer) StatBlock(c cid.Cid) (blocks.Block, error) {
 }
 
 func (p *Peer) GetLinks(c cid.Cid) ([]*ipld.Link, error) {
-	n, _ := p.Get(p.ctx, c)
+	n, _ := p.GetBlock(c)
 	return n.Links(), nil
 }
 

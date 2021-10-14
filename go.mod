@@ -17,11 +17,11 @@ require (
 	github.com/ipfs/go-ipfs-exchange-offline v0.0.1
 	github.com/ipfs/go-ipfs-provider v0.6.1
 	github.com/ipfs/go-ipld-cbor v0.0.5
-	github.com/ipfs/go-ipld-format v0.2.0
 	github.com/ipfs/go-ipns v0.1.2
-	github.com/ipfs/go-log v1.0.5 // indirect
+	github.com/ipfs/go-log v1.0.5
 	github.com/ipfs/go-log/v2 v2.3.0
-	github.com/ipfs/go-merkledag v0.4.0
+	github.com/ipld/go-codec-dagpb v1.3.0
+	github.com/ipld/go-ipld-prime v0.12.2
 	github.com/libp2p/go-libp2p v0.15.1
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
 	github.com/libp2p/go-libp2p-core v0.9.0
