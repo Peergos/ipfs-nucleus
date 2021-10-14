@@ -20,41 +20,53 @@ import (
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
+func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
+	if config.Type == "flatfs" {
+		shardFun, err := flatfs.ParseShardFunc(config.Params["shardFunc"].(string))
+		if err != nil {
+			panic(err)
+		}
+		rawds, err := flatfs.CreateOrOpen(ipfsDir+config.Path, shardFun, config.Params["sync"].(bool))
+		if err != nil {
+			panic(err)
+		}
+		mount := dsmount.Mount{Prefix: ds.NewKey(config.MountPoint), Datastore: rawds}
+		mds := dsmount.New([]dsmount.Mount{mount})
+		return mds
+	}
+	if config.Type == "levelds" {
+		leveldb, err := levelds.NewDatastore(ipfsDir+config.Path, &levelds.Options{
+			Compression: ldbopts.NoCompression,
+		})
+		if err != nil {
+			panic(err)
+		}
+		return leveldb
+	}
+	panic("Unknown datastore type: " + config.Type)
+}
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	shardFun, err := flatfs.ParseShardFunc("/repo/flatfs/shard/v1/next-to-last/2")
-	if err != nil {
-		panic(err)
-	}
-	rawds, err := flatfs.CreateOrOpen(".ipfs/blocks", shardFun, true)
-	if err != nil {
-		panic(err)
-	}
-	leveldb, err := levelds.NewDatastore(".ipfs/datastore", &levelds.Options{
-		Compression: ldbopts.NoCompression,
-	})
-	if err != nil {
-		panic(err)
-	}
-	mount := dsmount.Mount{Prefix: ds.NewKey("blocks"), Datastore: rawds}
-	mds := dsmount.New([]dsmount.Mount{mount})
-
 	config := config.ParseOrGenerateConfig(".ipfs/config")
+
+	blockstore := buildDatastore(".ipfs/", config.Blockstore)
+	rootstore := buildDatastore(".ipfs/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
 		ctx,
 		config.HostKey,
 		config.Swarm,
-		leveldb,
+		rootstore,
 		ipfsnucleus.Libp2pOptionsExtra...,
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	nucleus, err := ipfsnucleus.New(ctx, mds, h, dht, nil)
+	nucleus, err := ipfsnucleus.New(ctx, blockstore, h, dht, nil)
 	if err != nil {
 		panic(err)
 	}

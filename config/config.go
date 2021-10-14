@@ -39,8 +39,8 @@ func defaultConfig() Config {
 		"/ip4/127.0.0.1/tcp/8080",
 		0,
 		DataStoreConfig{Type: "flatfs", MountPoint: "/blocks", Path: "blocks",
-                Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
-		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression":"none"}})
+			Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
+		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}})
 }
 
 func buildConfig(priv crypto.PrivKey,
@@ -101,6 +101,7 @@ func saveConfig(config Config, filePath string) {
 			"BloomFilterSize": config.BloomFilterSize,
 			"Spec": map[string]interface{}{
 				"mounts": dstores,
+				"type":   "mount",
 			},
 		},
 	}
