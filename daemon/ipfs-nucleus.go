@@ -13,6 +13,7 @@ import (
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
 	s3ds "github.com/ipfs/go-ds-s3"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	manet "github.com/multiformats/go-multiaddr/net"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
@@ -21,30 +22,19 @@ import (
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
+func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) blockstore.Blockstore {
+	var rawds ds.Batching
+	var err error
 	if config.Type == "flatfs" {
 		shardFun, err := flatfs.ParseShardFunc(config.Params["shardFunc"].(string))
 		if err != nil {
 			panic(err)
 		}
-		rawds, err := flatfs.CreateOrOpen(ipfsDir+config.Path, shardFun, config.Params["sync"].(bool))
+		rawds, err = flatfs.CreateOrOpen(ipfsDir+config.Path, shardFun, config.Params["sync"].(bool))
 		if err != nil {
 			panic(err)
 		}
-		mount := dsmount.Mount{Prefix: ds.NewKey(config.MountPoint), Datastore: rawds}
-		mds := dsmount.New([]dsmount.Mount{mount})
-		return mds
-	}
-	if config.Type == "levelds" {
-		leveldb, err := levelds.NewDatastore(ipfsDir+config.Path, &levelds.Options{
-			Compression: ldbopts.NoCompression,
-		})
-		if err != nil {
-			panic(err)
-		}
-		return leveldb
-	}
-	if config.Type == "s3ds" {
+	} else if config.Type == "s3ds" {
 		accessKey := config.Params["accessKey"].(string)
 		bucket := config.Params["bucket"].(string)
 		region := config.Params["region"].(string)
@@ -61,13 +51,35 @@ func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
 			RegionEndpoint:      regionEndpoint,
 			CredentialsEndpoint: "",
 		}
-		s3,err := s3ds.NewS3Datastore(cfg)
-                if err != nil {
+		rawds, err = s3ds.NewS3Datastore(cfg)
+		if err != nil {
 			panic(err)
 		}
-		mount := dsmount.Mount{Prefix: ds.NewKey(config.MountPoint), Datastore: s3}
-		mds := dsmount.New([]dsmount.Mount{mount})
-		return mds
+	} else {
+		panic("Unknown blockstore type: " + config.Type)
+	}
+	mount := dsmount.Mount{Prefix: ds.NewKey(config.MountPoint), Datastore: rawds}
+	mds := dsmount.New([]dsmount.Mount{mount})
+	bs := blockstore.NewBlockstore(mds)
+	bs = blockstore.NewIdStore(bs)
+	cacheOpts := blockstore.DefaultCacheOpts()
+	cacheOpts.HasBloomFilterSize = bloomFilterSize
+	cached, err := blockstore.CachedBlockstore(ctx, bs, cacheOpts)
+	if err != nil {
+		panic(err)
+	}
+	return cached
+}
+
+func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
+	if config.Type == "levelds" {
+		leveldb, err := levelds.NewDatastore(ipfsDir+config.Path, &levelds.Options{
+			Compression: ldbopts.NoCompression,
+		})
+		if err != nil {
+			panic(err)
+		}
+		return leveldb
 	}
 	panic("Unknown datastore type: " + config.Type)
 }
@@ -78,7 +90,7 @@ func main() {
 
 	config := config.ParseOrGenerateConfig(".ipfs/config")
 
-	blockstore := buildDatastore(".ipfs/", config.Blockstore)
+	blockstore := buildBlockstore(".ipfs/", config.Blockstore, config.BloomFilterSize, ctx)
 	rootstore := buildDatastore(".ipfs/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
@@ -92,7 +104,7 @@ func main() {
 		panic(err)
 	}
 
-	nucleus, err := ipfsnucleus.New(ctx, blockstore, h, dht, nil)
+	nucleus, err := ipfsnucleus.New(ctx, blockstore, rootstore, h, dht, nil)
 	if err != nil {
 		panic(err)
 	}

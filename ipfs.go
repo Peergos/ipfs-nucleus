@@ -11,6 +11,7 @@ import (
 	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
+	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	offline "github.com/ipfs/go-ipfs-exchange-offline"
 	provider "github.com/ipfs/go-ipfs-provider"
@@ -70,7 +71,8 @@ type Peer struct {
 // Routing (DHT). Peer implements the ipld.DAGService interface.
 func New(
 	ctx context.Context,
-	store datastore.Batching,
+	blockstore blockstore.Blockstore,
+	rootstore ds.Batching,
 	host host.Host,
 	dht routing.Routing,
 	cfg *Config,
@@ -83,18 +85,15 @@ func New(
 	cfg.setDefaults()
 
 	p := &Peer{
-		ctx:   ctx,
-		cfg:   cfg,
-		Host:  host,
-		dht:   dht,
-		store: store,
+		ctx:    ctx,
+		cfg:    cfg,
+		Host:   host,
+		dht:    dht,
+		bstore: blockstore,
+		store:  rootstore,
 	}
 
-	err := p.setupBlockstore()
-	if err != nil {
-		return nil, err
-	}
-	err = p.setupBlockService()
+	err := p.setupBlockService()
 	if err != nil {
 		return nil, err
 	}
@@ -112,17 +111,6 @@ func New(
 	go p.autoclose()
 
 	return p, nil
-}
-
-func (p *Peer) setupBlockstore() error {
-	bs := blockstore.NewBlockstore(p.store)
-	bs = blockstore.NewIdStore(bs)
-	cachedbs, err := blockstore.CachedBlockstore(p.ctx, bs, blockstore.DefaultCacheOpts())
-	if err != nil {
-		return err
-	}
-	p.bstore = cachedbs
-	return nil
 }
 
 func (p *Peer) setupBlockService() error {
