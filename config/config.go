@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/multiformats/go-multiaddr"
@@ -71,6 +72,14 @@ func buildConfig(priv crypto.PrivKey,
 	}
 }
 
+func writeConfigJSON(jsonRoot map[string]interface{}, filePath string) {
+	bytes, err := json.MarshalIndent(jsonRoot, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	ioutil.WriteFile(filePath, bytes, 0600)
+}
+
 func saveConfig(config Config, filePath string) {
 	pubBytes, _ := crypto.MarshalPublicKey(config.HostKey.GetPublic())
 	mhash, _ := mh.Sum(pubBytes, mh.IDENTITY, -1)
@@ -105,11 +114,7 @@ func saveConfig(config Config, filePath string) {
 			},
 		},
 	}
-	bytes, err := json.MarshalIndent(&result, "", "    ")
-	if err != nil {
-		panic(err)
-	}
-	ioutil.WriteFile(filePath, bytes, 0600)
+	writeConfigJSON(result, filePath)
 }
 
 func parseDataStoreConfig(json map[string]interface{}) DataStoreConfig {
@@ -122,12 +127,7 @@ func parseDataStoreConfig(json map[string]interface{}) DataStoreConfig {
 	}
 }
 
-func ParseOrGenerateConfig(filePath string) Config {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		config := defaultConfig()
-		saveConfig(config, filePath)
-		return config
-	}
+func parseFile(filePath string) map[string]interface{} {
 	jsonFile, err := os.Open(filePath)
 
 	if err != nil {
@@ -139,6 +139,17 @@ func ParseOrGenerateConfig(filePath string) Config {
 
 	var result map[string]interface{}
 	json.Unmarshal([]byte(byteValue), &result)
+	return result
+}
+
+func ParseOrGenerateConfig(filePath string) Config {
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		config := defaultConfig()
+		saveConfig(config, filePath)
+		return config
+	}
+
+	result := parseFile(filePath)
 
 	privString := result["Identity"].(map[string]interface{})["PrivKey"].(string)
 	privBytes, err := base64.StdEncoding.DecodeString(privString)
@@ -166,4 +177,31 @@ func ParseOrGenerateConfig(filePath string) Config {
 		addresses["API"].(string),
 		addresses["Gateway"].(string),
 		bloomFilterSize, blockstore, rootstore)
+}
+
+func setConfigField(field []string, value interface{}, json map[string]interface{}) {
+	if len(field) == 1 {
+		json[field[0]] = value
+		return
+	}
+	subTree := json[field[0]]
+	if subTree == nil {
+		subTree = map[string]interface{}{}
+		json[field[0]] = subTree
+	}
+	setConfigField(field[1:], value, json[field[0]].(map[string]interface{}))
+}
+
+func SetField(filePath string, fieldPath string, fieldVal string, isJSON bool) {
+	var newVal interface{}
+	if isJSON {
+		json.Unmarshal([]byte(fieldVal), &newVal)
+	} else {
+		newVal = fieldVal
+	}
+
+	json := parseFile(filePath)
+	path := strings.Split(fieldPath, ".")
+	setConfigField(path, newVal, json)
+	writeConfigJSON(json, filePath)
 }

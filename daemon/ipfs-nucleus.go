@@ -88,8 +88,25 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	nArgs := len(os.Args[1:])
+	if nArgs > 0 && os.Args[1] == "config" {
+		// update a field in the config file
+		isJSON := nArgs > 1 && os.Args[2] == "--json"
+		var fieldName string
+		var value string
+		if isJSON {
+			fieldName = os.Args[3]
+			value = os.Args[4]
+		} else {
+			fieldName = os.Args[2]
+			value = os.Args[3]
+		}
+		config.SetField(".ipfs/config", fieldName, value, isJSON)
+		return
+	}
+
 	config := config.ParseOrGenerateConfig(".ipfs/config")
-	if len(os.Args[1:]) > 0 && os.Args[1] == "init" {
+	if nArgs > 0 && os.Args[1] == "init" {
 		return
 	}
 
