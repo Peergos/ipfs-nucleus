@@ -17,6 +17,10 @@ It is designed as a drop in replacment for IPFS with the minimal functionality t
 
 It will read its config from a prior existing ipfs config file if present, or create one with the relevant parameters. It uses a v0 blockstore (cids) rather than a v1 (multihashes).
 
+The CLI supports the following sub-commands similar to ipfs:
+* init
+* config
+
 ## Building
 > go build daemon/ipfs-nucleus.go
 
