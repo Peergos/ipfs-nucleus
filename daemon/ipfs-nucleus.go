@@ -89,6 +89,9 @@ func main() {
 	defer cancel()
 
 	config := config.ParseOrGenerateConfig(".ipfs/config")
+	if len(os.Args[1:]) > 0 && os.Args[1] == "init" {
+		return
+	}
 
 	blockstore := buildBlockstore(".ipfs/", config.Blockstore, config.BloomFilterSize, ctx)
 	rootstore := buildDatastore(".ipfs/", config.Rootstore)
