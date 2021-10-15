@@ -7,7 +7,9 @@ import (
 	"os"
 	"strings"
 
+	ipfsconfig "github.com/ipfs/go-ipfs-config"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 	"github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 )
@@ -20,6 +22,7 @@ type DataStoreConfig struct {
 }
 
 type Config struct {
+	Bootstrap       []peer.AddrInfo
 	Swarm           []multiaddr.Multiaddr
 	HostKey         crypto.PrivKey
 	Api             multiaddr.Multiaddr
@@ -29,12 +32,18 @@ type Config struct {
 	Rootstore       DataStoreConfig
 }
 
+func defaultBootstrapPeers() []peer.AddrInfo {
+	defaults, _ := ipfsconfig.DefaultBootstrapPeers()
+	return defaults
+}
+
 func defaultConfig() Config {
 	priv, _, err := crypto.GenerateKeyPair(crypto.Ed25519, 0)
 	if err != nil {
 		panic(err)
 	}
 	return buildConfig(priv,
+		defaultBootstrapPeers(),
 		[]string{"/ip4/0.0.0.0/tcp/4001", "/ip6/::/tcp/4001"},
 		"/ip4/127.0.0.1/tcp/5001",
 		"/ip4/127.0.0.1/tcp/8080",
@@ -45,6 +54,7 @@ func defaultConfig() Config {
 }
 
 func buildConfig(priv crypto.PrivKey,
+	bootstrap []peer.AddrInfo,
 	swarmAddrs []string,
 	apiAddr string,
 	gatewayAddr string,
@@ -62,6 +72,7 @@ func buildConfig(priv crypto.PrivKey,
 	api, _ := multiaddr.NewMultiaddr(apiAddr)
 	gateway, _ := multiaddr.NewMultiaddr(gatewayAddr)
 	return Config{
+		Bootstrap:       bootstrap,
 		Swarm:           swarm,
 		HostKey:         priv,
 		Api:             api,
@@ -96,12 +107,21 @@ func saveConfig(config Config, filePath string) {
 			"child":      params,
 		}
 	}
+	bootstrap := make([]multiaddr.Multiaddr, len(config.Bootstrap))
+	for i, target := range config.Bootstrap {
+		mas, err := peer.AddrInfoToP2pAddrs(&target)
+		if err != nil {
+			panic(err)
+		}
+		bootstrap[i] = mas[0]
+	}
 	var result = map[string]interface{}{
 		"Addresses": map[string]interface{}{
 			"API":     config.Api,
 			"Gateway": config.Gateway,
 			"Swarm":   config.Swarm,
 		},
+		"Bootstrap": bootstrap,
 		"Identity": map[string]interface{}{
 			"PeerID":  mhash.B58String(),
 			"PrivKey": base64.StdEncoding.EncodeToString(privBytes),
@@ -167,12 +187,27 @@ func ParseOrGenerateConfig(filePath string) Config {
 		swarm[i] = v.(string)
 	}
 
+	bootstrapMas := result["Bootstrap"].([]interface{})
+	bootstrap := make([]peer.AddrInfo, len(bootstrapMas))
+	for i, addr := range bootstrapMas {
+		targetMa, err := multiaddr.NewMultiaddr(addr.(string))
+		if err != nil {
+			panic(err)
+		}
+		target, err := peer.AddrInfoFromP2pAddr(targetMa)
+		if err != nil {
+			panic(err)
+		}
+		bootstrap[i] = *target
+	}
+
 	ds := result["Datastore"].(map[string]interface{})
 	bloomFilterSize := int(ds["BloomFilterSize"].(float64))
 	dsmounts := ds["Spec"].(map[string]interface{})["mounts"].([]interface{})
 	blockstore := parseDataStoreConfig(dsmounts[0].(map[string]interface{}))
 	rootstore := parseDataStoreConfig(dsmounts[1].(map[string]interface{}))
 	return buildConfig(priv,
+		bootstrap,
 		swarm,
 		addresses["API"].(string),
 		addresses["Gateway"].(string),

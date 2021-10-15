@@ -5,13 +5,11 @@ import (
 	"time"
 
 	datastore "github.com/ipfs/go-datastore"
-	config "github.com/ipfs/go-ipfs-config"
 	ipns "github.com/ipfs/go-ipns"
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	host "github.com/libp2p/go-libp2p-core/host"
-	peer "github.com/libp2p/go-libp2p-core/peer"
 	routing "github.com/libp2p/go-libp2p-core/routing"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	dualdht "github.com/libp2p/go-libp2p-kad-dht/dual"
@@ -20,13 +18,6 @@ import (
 	libp2pquic "github.com/libp2p/go-libp2p-quic-transport"
 	"github.com/multiformats/go-multiaddr"
 )
-
-// DefaultBootstrapPeers returns the default go-ipfs bootstrap peers (for use
-// with NewLibp2pHost.
-func DefaultBootstrapPeers() []peer.AddrInfo {
-	defaults, _ := config.DefaultBootstrapPeers()
-	return defaults
-}
 
 // Libp2pOptionsExtra provides some useful libp2p options
 // to create a fully featured libp2p host. It can be used with

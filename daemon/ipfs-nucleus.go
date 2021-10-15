@@ -140,7 +140,7 @@ func main() {
 	apiMux.HandleFunc("/api/v0/refs", api.Refs)
 	apiMux.HandleFunc("/api/v0/refs/local", api.LocalRefs)
 
-	nucleus.Bootstrap(ipfsnucleus.DefaultBootstrapPeers())
+	nucleus.Bootstrap(config.Bootstrap)
 
 	apiAddr, err := manet.ToNetAddr(config.Api)
 	go serve(apiAddr.String(), apiMux)
