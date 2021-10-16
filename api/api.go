@@ -34,7 +34,7 @@ func (a *HttpApi) BlockGet(rw http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-	rw.Write(block.RawData())
+	rw.Write(block)
 }
 
 func (a *HttpApi) BlockPut(rw http.ResponseWriter, req *http.Request) {
@@ -97,7 +97,7 @@ func (a *HttpApi) BlockStat(rw http.ResponseWriter, req *http.Request) {
 		panic(err)
 	}
 	rw.Header().Set("Content-Type", "application/json")
-	rw.Write([]byte(fmt.Sprintf("{\"Size\":%d}", len(block.RawData()))))
+	rw.Write([]byte(fmt.Sprintf("{\"Size\":%d}", len(block))))
 }
 
 func (a *HttpApi) Refs(rw http.ResponseWriter, req *http.Request) {
@@ -107,10 +107,11 @@ func (a *HttpApi) Refs(rw http.ResponseWriter, req *http.Request) {
 	}
 	arg := req.URL.Query()["arg"][0]
 	cid, _ := cid.Decode(arg)
-	links, err := a.Nucleus.GetLinks(cid)
+	block, err := a.Nucleus.GetBlock(cid)
 	if err != nil {
 		panic(err)
 	}
+        links := 
 	rw.Header().Set("Content-Type", "application/json")
 	for _, link := range links {
 		rw.Write([]byte(fmt.Sprintf("{\"Ref\":\"%s\"}", link.Cid)))

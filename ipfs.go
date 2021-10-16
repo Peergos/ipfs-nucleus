@@ -7,7 +7,7 @@ import (
 
 	"github.com/ipfs/go-bitswap"
 	"github.com/ipfs/go-bitswap/network"
-	//blocks "github.com/ipfs/go-block-format"
+	blocks "github.com/ipfs/go-block-format"
 	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
@@ -228,16 +228,16 @@ func (p *Peer) HasBlock(c cid.Cid) (bool, error) {
 	return p.BlockStore().Has(c)
 }
 
-func (p *Peer) GetBlock(c cid.Cid) (blocks.Block, error) {
+func (p *Peer) GetBlock(c cid.Cid) ([]byte, error) {
 	local, _ := p.HasBlock(c)
 	if local {
 		block, err := p.BlockStore().Get(c)
 		if err != nil {
 			panic(err)
 		}
-		return block, nil
+		return block.RawData(), nil
 	}
-	return p.bserv.GetBlock(p.ctx, c)
+	return p.bserv.GetBlock(p.ctx, c).RawData()
 }
 
 func (p *Peer) PutBlock(b blocks.Block) error {
@@ -250,23 +250,6 @@ func (p *Peer) RmBlock(c cid.Cid) error {
 		return p.BlockStore().DeleteBlock(c)
 	}
 	return nil
-}
-
-func (p *Peer) StatBlock(c cid.Cid) (blocks.Block, error) {
-	local, _ := p.HasBlock(c)
-	if local {
-		block, err := p.BlockStore().Get(c)
-		if err != nil {
-			panic(err)
-		}
-		return block, nil
-	}
-	return p.bserv.GetBlock(p.ctx, c)
-}
-
-func (p *Peer) GetLinks(c cid.Cid) ([]*ipld.Link, error) {
-	n, _ := p.GetBlock(c)
-	return n.Links(), nil
 }
 
 func (p *Peer) GetRefs() (<-chan cid.Cid, error) {
