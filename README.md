@@ -11,7 +11,7 @@ It implements the following http api calls from IPFS:
 * block.rm (only needed by GC)
 * refs.local (only needed by GC)
 
-As well as implementing the p2p http proxy.
+As well as implementing the p2p http proxy (incoming and outgoing). The incoming proxy target is a new config field: Addresses.ProxyTarget
 
 It is designed as a drop in replacment for IPFS with the minimal functionality that [Peergos](https://github.com/peergos/peergos) needs to operate, including running an external GC. It includes support for flatfs, leveldb and S3 based blockstores including bloomfilter based wrapping.
 
