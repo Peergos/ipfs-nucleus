@@ -24,6 +24,7 @@ import (
 	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	routing "github.com/libp2p/go-libp2p-core/routing"
+	p2p "github.com/peergos/ipfs-nucleus/p2p"
 )
 
 func init() {
@@ -61,6 +62,7 @@ type Peer struct {
 	dht   routing.Routing
 	store datastore.Batching
 
+	P2P             p2p.P2P
 	ipld.DAGService // become a DAG service
 	bstore          blockstore.Blockstore
 	bserv           blockservice.BlockService
@@ -83,6 +85,7 @@ func New(
 	}
 
 	cfg.setDefaults()
+	proxy := p2p.New(host.ID(), host, host.Peerstore())
 
 	p := &Peer{
 		ctx:    ctx,
@@ -91,6 +94,7 @@ func New(
 		dht:    dht,
 		bstore: blockstore,
 		store:  rootstore,
+		P2P:    *proxy,
 	}
 
 	err := p.setupBlockService()

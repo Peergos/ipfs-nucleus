@@ -6,16 +6,16 @@ import (
 	"io"
 	"testing"
 
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
-	mh "github.com/multiformats/go-multihash"
 	datastore "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
+	mh "github.com/multiformats/go-multihash"
 	multihash "github.com/multiformats/go-multihash"
 )
 
@@ -28,9 +28,9 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 
 	ds1 := NewInMemoryDatastore()
 	ds2 := NewInMemoryDatastore()
-        bs1 := blockstore.NewBlockstore(ds1)
-        bs2 := blockstore.NewBlockstore(ds2)
-        
+	bs1 := blockstore.NewBlockstore(ds1)
+	bs2 := blockstore.NewBlockstore(ds2)
+
 	priv1, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
 		t.Fatal(err)
@@ -177,11 +177,11 @@ func TestBlock(t *testing.T) {
 	defer closer(t)
 
 	content := []byte("hola")
-        hash, _ := mh.Sum(content, mh.SHA2_256, -1)
-        c := cid.NewCidV1(cid.Raw, hash)
-        block, _ := blocks.NewBlockWithCid(content, c)
+	hash, _ := mh.Sum(content, mh.SHA2_256, -1)
+	c := cid.NewCidV1(cid.Raw, hash)
+	block, _ := blocks.NewBlockWithCid(content, c)
 	err := p1.PutBlock(block)
-        if err != nil {
+	if err != nil {
 		t.Fatal(err)
 	}
 

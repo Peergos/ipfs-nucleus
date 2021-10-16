@@ -14,10 +14,12 @@ import (
 	levelds "github.com/ipfs/go-ds-leveldb"
 	s3ds "github.com/ipfs/go-ds-s3"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
 	config "github.com/peergos/ipfs-nucleus/config"
+	p2p "github.com/peergos/ipfs-nucleus/p2p"
 	p2phttp "github.com/peergos/ipfs-nucleus/p2phttp"
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
@@ -129,6 +131,14 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// setup incoming http proxy
+	proto := protocol.ID("/http")
+	// port can't be 0
+	if err := p2p.CheckPort(config.ProxyTarget); err != nil {
+		panic(err)
+	}
+	_, err = nucleus.P2P.ForwardRemote(ctx, proto, config.ProxyTarget, false)
 
 	api := &api.HttpApi{nucleus}
 

@@ -27,6 +27,7 @@ type Config struct {
 	HostKey         crypto.PrivKey
 	Api             multiaddr.Multiaddr
 	Gateway         multiaddr.Multiaddr
+	ProxyTarget     multiaddr.Multiaddr
 	BloomFilterSize int
 	Blockstore      DataStoreConfig
 	Rootstore       DataStoreConfig
@@ -47,6 +48,7 @@ func defaultConfig() Config {
 		[]string{"/ip4/0.0.0.0/tcp/4001", "/ip6/::/tcp/4001"},
 		"/ip4/127.0.0.1/tcp/5001",
 		"/ip4/127.0.0.1/tcp/8080",
+		"/ip4/127.0.0.1/tcp/8000",
 		0,
 		DataStoreConfig{Type: "flatfs", MountPoint: "/blocks", Path: "blocks",
 			Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
@@ -58,6 +60,7 @@ func buildConfig(priv crypto.PrivKey,
 	swarmAddrs []string,
 	apiAddr string,
 	gatewayAddr string,
+	proxyTargetAddr string,
 	BloomFilterSize int,
 	blockstore DataStoreConfig,
 	rootStore DataStoreConfig) Config {
@@ -71,12 +74,14 @@ func buildConfig(priv crypto.PrivKey,
 	}
 	api, _ := multiaddr.NewMultiaddr(apiAddr)
 	gateway, _ := multiaddr.NewMultiaddr(gatewayAddr)
+	proxyTarget, _ := multiaddr.NewMultiaddr(proxyTargetAddr)
 	return Config{
 		Bootstrap:       bootstrap,
 		Swarm:           swarm,
 		HostKey:         priv,
 		Api:             api,
 		Gateway:         gateway,
+		ProxyTarget:     proxyTarget,
 		BloomFilterSize: BloomFilterSize,
 		Blockstore:      blockstore,
 		Rootstore:       rootStore,
@@ -117,9 +122,10 @@ func saveConfig(config Config, filePath string) {
 	}
 	var result = map[string]interface{}{
 		"Addresses": map[string]interface{}{
-			"API":     config.Api,
-			"Gateway": config.Gateway,
-			"Swarm":   config.Swarm,
+			"API":         config.Api,
+			"Gateway":     config.Gateway,
+			"Swarm":       config.Swarm,
+			"ProxyTarget": config.ProxyTarget,
 		},
 		"Bootstrap": bootstrap,
 		"Identity": map[string]interface{}{
@@ -211,6 +217,7 @@ func ParseOrGenerateConfig(filePath string) Config {
 		swarm,
 		addresses["API"].(string),
 		addresses["Gateway"].(string),
+		addresses["ProxyTarget"].(string),
 		bloomFilterSize, blockstore, rootstore)
 }
 
