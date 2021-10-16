@@ -88,6 +88,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	ipfsDir := os.Getenv("IPFS_PATH")
 	nArgs := len(os.Args[1:])
 	if nArgs > 0 && os.Args[1] == "config" {
 		// update a field in the config file
@@ -101,17 +102,17 @@ func main() {
 			fieldName = os.Args[2]
 			value = os.Args[3]
 		}
-		config.SetField(".ipfs/config", fieldName, value, isJSON)
+		config.SetField(ipfsDir+"/config", fieldName, value, isJSON)
 		return
 	}
 
-	config := config.ParseOrGenerateConfig(".ipfs/config")
+	config := config.ParseOrGenerateConfig(ipfsDir + "/config")
 	if nArgs > 0 && os.Args[1] == "init" {
 		return
 	}
 
-	blockstore := buildBlockstore(".ipfs/", config.Blockstore, config.BloomFilterSize, ctx)
-	rootstore := buildDatastore(".ipfs/", config.Rootstore)
+	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx)
+	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
 		ctx,
