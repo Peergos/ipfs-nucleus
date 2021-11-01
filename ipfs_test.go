@@ -12,10 +12,10 @@ import (
 	dssync "github.com/ipfs/go-datastore/sync"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/peergos/go-bitswap-auth/auth"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
+	"github.com/peergos/go-bitswap-auth/auth"
 )
 
 func NewInMemoryDatastore() datastore.Batching {
@@ -23,7 +23,7 @@ func NewInMemoryDatastore() datastore.Batching {
 }
 
 func allowAll(cid.Cid, peer.ID, string) bool {
-     return true
+	return true
 }
 
 func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {

@@ -31,7 +31,7 @@ func (a *HttpApi) BlockGet(rw http.ResponseWriter, req *http.Request) {
 	}
 	arg := req.URL.Query()["arg"][0]
 	cid, _ := cid.Decode(arg)
-        authz := req.URL.Query()["auth"][0]
+	authz := req.URL.Query()["auth"][0]
 	block, err := a.Nucleus.GetBlock(auth.NewWant(cid, authz))
 	if err != nil {
 		panic(err)

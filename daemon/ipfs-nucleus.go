@@ -5,20 +5,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
-	ds "github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-cid"
-	peer "github.com/libp2p/go-libp2p-core/peer"
-	"github.com/peergos/go-bitswap-auth/auth"
+	ds "github.com/ipfs/go-datastore"
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
 	s3ds "github.com/peergos/go-ds-s3"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
+	"github.com/peergos/go-bitswap-auth/auth"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
 	config "github.com/peergos/ipfs-nucleus/config"
@@ -28,7 +29,7 @@ import (
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, allow func(cid.Cid, peer.ID, string)bool, ctx context.Context) auth.AuthBlockstore {
+func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, allow func(cid.Cid, peer.ID, string) bool, ctx context.Context) auth.AuthBlockstore {
 	var rawds ds.Batching
 	var err error
 	if config.Type == "flatfs" {
@@ -90,10 +91,6 @@ func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
 	panic("Unknown datastore type: " + config.Type)
 }
 
-func allowAll(cid.Cid, peer.ID, string) bool {
-     return true
-}
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -121,7 +118,19 @@ func main() {
 		return
 	}
 
-	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, allowAll, ctx))
+	allow := func(c cid.Cid, p peer.ID, a string) bool {
+		resp, err := http.Get(fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a))
+		if err != nil {
+			return false
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false
+		}
+		return "true" == string(body)
+	}
+
+	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, allow, ctx))
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
