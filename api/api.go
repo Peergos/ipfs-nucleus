@@ -8,6 +8,7 @@ import (
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	mh "github.com/multiformats/go-multihash"
+	"github.com/peergos/go-bitswap-auth/auth"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 )
 
@@ -30,11 +31,12 @@ func (a *HttpApi) BlockGet(rw http.ResponseWriter, req *http.Request) {
 	}
 	arg := req.URL.Query()["arg"][0]
 	cid, _ := cid.Decode(arg)
-	block, err := a.Nucleus.GetBlock(cid)
+        authz := req.URL.Query()["auth"][0]
+	block, err := a.Nucleus.GetBlock(auth.NewWant(cid, authz))
 	if err != nil {
 		panic(err)
 	}
-	rw.Write(block.RawData())
+	rw.Write(block.GetAuthedData())
 }
 
 func (a *HttpApi) BlockPut(rw http.ResponseWriter, req *http.Request) {
@@ -92,29 +94,13 @@ func (a *HttpApi) BlockStat(rw http.ResponseWriter, req *http.Request) {
 	}
 	arg := req.URL.Query()["arg"][0]
 	cid, _ := cid.Decode(arg)
-	block, err := a.Nucleus.GetBlock(cid)
+	authz := req.URL.Query()["auth"][0]
+	block, err := a.Nucleus.GetBlock(auth.NewWant(cid, authz))
 	if err != nil {
 		panic(err)
 	}
 	rw.Header().Set("Content-Type", "application/json")
-	rw.Write([]byte(fmt.Sprintf("{\"Size\":%d}", len(block.RawData()))))
-}
-
-func (a *HttpApi) Refs(rw http.ResponseWriter, req *http.Request) {
-	if !a.isPost(req) {
-		rw.WriteHeader(http.StatusForbidden)
-		return
-	}
-	arg := req.URL.Query()["arg"][0]
-	cid, _ := cid.Decode(arg)
-	links, err := a.Nucleus.GetLinks(cid)
-	if err != nil {
-		panic(err)
-	}
-	rw.Header().Set("Content-Type", "application/json")
-	for _, link := range links {
-		rw.Write([]byte(fmt.Sprintf("{\"Ref\":\"%s\"}", link.Cid)))
-	}
+	rw.Write([]byte(fmt.Sprintf("{\"Size\":%d}", len(block.GetAuthedData()))))
 }
 
 func (a *HttpApi) LocalRefs(rw http.ResponseWriter, req *http.Request) {

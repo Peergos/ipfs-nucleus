@@ -3,9 +3,7 @@ module github.com/peergos/ipfs-nucleus
 go 1.15
 
 require (
-	github.com/ipfs/go-bitswap v0.4.0
 	github.com/ipfs/go-block-format v0.0.3
-	github.com/ipfs/go-blockservice v0.1.7
 	github.com/ipfs/go-cid v0.1.0
 	github.com/ipfs/go-datastore v0.4.6
 	github.com/ipfs/go-ds-flatfs v0.4.5
@@ -13,7 +11,6 @@ require (
 	github.com/ipfs/go-ipfs v0.10.0
 	github.com/ipfs/go-ipfs-blockstore v0.1.6
 	github.com/ipfs/go-ipfs-config v0.16.0
-	github.com/ipfs/go-ipfs-exchange-offline v0.0.1
 	github.com/ipfs/go-ipfs-provider v0.6.1
 	github.com/ipfs/go-ipld-cbor v0.0.5
 	github.com/ipfs/go-ipld-format v0.2.0
@@ -21,6 +18,7 @@ require (
 	github.com/ipfs/go-log v1.0.5
 	github.com/ipfs/go-log/v2 v2.3.0
 	github.com/ipfs/go-merkledag v0.4.0
+	github.com/ipfs/go-verifcid v0.0.1
 	github.com/libp2p/go-libp2p v0.15.1
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
 	github.com/libp2p/go-libp2p-core v0.9.0
@@ -31,6 +29,8 @@ require (
 	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multihash v0.0.16
+	github.com/peergos/go-bitswap-auth v0.5.2
 	github.com/peergos/go-ds-s3 v0.7.9
+	github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1
 	github.com/syndtr/goleveldb v1.0.0
 )

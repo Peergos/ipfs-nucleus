@@ -11,16 +11,19 @@ import (
 	datastore "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	cbor "github.com/ipfs/go-ipld-cbor"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/peergos/go-bitswap-auth/auth"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
-	multihash "github.com/multiformats/go-multihash"
 )
 
 func NewInMemoryDatastore() datastore.Batching {
 	return dssync.MutexWrap(datastore.NewMapDatastore())
+}
+
+func allowAll(cid.Cid, peer.ID, string) bool {
+     return true
 }
 
 func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
@@ -28,8 +31,8 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 
 	ds1 := NewInMemoryDatastore()
 	ds2 := NewInMemoryDatastore()
-	bs1 := blockstore.NewBlockstore(ds1)
-	bs2 := blockstore.NewBlockstore(ds2)
+	bs1 := auth.NewAuthBlockstore(blockstore.NewBlockstore(ds1), allowAll)
+	bs2 := auth.NewAuthBlockstore(blockstore.NewBlockstore(ds2), allowAll)
 
 	priv1, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
@@ -99,79 +102,6 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 	return
 }
 
-func TestDAG(t *testing.T) {
-	ctx := context.Background()
-	p1, p2, closer := setupPeers(t)
-	defer closer(t)
-
-	m := map[string]string{
-		"akey": "avalue",
-	}
-
-	codec := uint64(multihash.SHA2_256)
-	node, err := cbor.WrapObject(m, codec, multihash.DefaultLengths[codec])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("created node: ", node.Cid())
-	err = p1.Add(ctx, node)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = p2.Get(ctx, node.Cid())
-	if err != nil {
-		t.Error(err)
-	}
-
-	err = p1.Remove(ctx, node.Cid())
-	if err != nil {
-		t.Error(err)
-	}
-
-	err = p2.Remove(ctx, node.Cid())
-	if err != nil {
-		t.Error(err)
-	}
-
-	if ok, err := p1.BlockStore().Has(node.Cid()); ok || err != nil {
-		t.Error("block should have been deleted")
-	}
-
-	if ok, err := p2.BlockStore().Has(node.Cid()); ok || err != nil {
-		t.Error("block should have been deleted")
-	}
-}
-
-func TestSession(t *testing.T) {
-	ctx := context.Background()
-	p1, p2, closer := setupPeers(t)
-	defer closer(t)
-
-	m := map[string]string{
-		"akey": "avalue",
-	}
-
-	codec := uint64(multihash.SHA2_256)
-	node, err := cbor.WrapObject(m, codec, multihash.DefaultLengths[codec])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log("created node: ", node.Cid())
-	err = p1.Add(ctx, node)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sesGetter := p2.Session(ctx)
-	_, err = sesGetter.Get(ctx, node.Cid())
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestBlock(t *testing.T) {
 	p1, p2, closer := setupPeers(t)
 	defer closer(t)
@@ -185,12 +115,12 @@ func TestBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := p2.GetBlock(c)
+	res, err := p2.GetBlock(auth.NewWant(c, "auth"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	content2 := res.RawData()
+	content2 := res.GetAuthedData()
 
 	if !bytes.Equal(content, content2) {
 		t.Error(string(content))

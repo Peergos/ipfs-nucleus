@@ -9,6 +9,9 @@ import (
 	"os"
 
 	ds "github.com/ipfs/go-datastore"
+	"github.com/ipfs/go-cid"
+	peer "github.com/libp2p/go-libp2p-core/peer"
+	"github.com/peergos/go-bitswap-auth/auth"
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
@@ -25,7 +28,7 @@ import (
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) blockstore.Blockstore {
+func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, allow func(cid.Cid, peer.ID, string)bool, ctx context.Context) auth.AuthBlockstore {
 	var rawds ds.Batching
 	var err error
 	if config.Type == "flatfs" {
@@ -71,7 +74,7 @@ func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterS
 	if err != nil {
 		panic(err)
 	}
-	return cached
+	return auth.NewAuthBlockstore(cached, allow)
 }
 
 func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
@@ -85,6 +88,10 @@ func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
 		return leveldb
 	}
 	panic("Unknown datastore type: " + config.Type)
+}
+
+func allowAll(cid.Cid, peer.ID, string) bool {
+     return true
 }
 
 func main() {
@@ -114,7 +121,7 @@ func main() {
 		return
 	}
 
-	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx))
+	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, allowAll, ctx))
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
@@ -149,7 +156,6 @@ func main() {
 	apiMux.HandleFunc("/api/v0/block/put", api.BlockPut)
 	apiMux.HandleFunc("/api/v0/block/rm", api.BlockRm)
 	apiMux.HandleFunc("/api/v0/block/stat", api.BlockStat)
-	apiMux.HandleFunc("/api/v0/refs", api.Refs)
 	apiMux.HandleFunc("/api/v0/refs/local", api.LocalRefs)
 
 	nucleus.Bootstrap(config.Bootstrap)
