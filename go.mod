@@ -10,7 +10,6 @@ require (
 	github.com/ipfs/go-datastore v0.4.6
 	github.com/ipfs/go-ds-flatfs v0.4.5
 	github.com/ipfs/go-ds-leveldb v0.4.2
-	github.com/ipfs/go-ds-s3 v0.7.0
 	github.com/ipfs/go-ipfs v0.10.0
 	github.com/ipfs/go-ipfs-blockstore v0.1.6
 	github.com/ipfs/go-ipfs-config v0.16.0
@@ -19,7 +18,7 @@ require (
 	github.com/ipfs/go-ipld-cbor v0.0.5
 	github.com/ipfs/go-ipld-format v0.2.0
 	github.com/ipfs/go-ipns v0.1.2
-	github.com/ipfs/go-log v1.0.5 // indirect
+	github.com/ipfs/go-log v1.0.5
 	github.com/ipfs/go-log/v2 v2.3.0
 	github.com/ipfs/go-merkledag v0.4.0
 	github.com/libp2p/go-libp2p v0.15.1
@@ -32,5 +31,6 @@ require (
 	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multihash v0.0.16
+	github.com/peergos/go-ds-s3 v0.7.8
 	github.com/syndtr/goleveldb v1.0.0
 )

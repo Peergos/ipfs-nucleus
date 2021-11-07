@@ -428,8 +428,6 @@ github.com/ipfs/go-ds-leveldb v0.4.1/go.mod h1:jpbku/YqBSsBc1qgME8BkWS4AxzF2cEu1
 github.com/ipfs/go-ds-leveldb v0.4.2 h1:QmQoAJ9WkPMUfBLnu1sBVy0xWWlJPg0m4kRAiJL9iaw=
 github.com/ipfs/go-ds-leveldb v0.4.2/go.mod h1:jpbku/YqBSsBc1qgME8BkWS4AxzF2cEu1Ii2r79Hh9s=
 github.com/ipfs/go-ds-measure v0.1.0/go.mod h1:1nDiFrhLlwArTME1Ees2XaBOl49OoCgd2A3f8EchMSY=
-github.com/ipfs/go-ds-s3 v0.7.0 h1:vWyJ3kk6VvkoZ/q3abzOykE/67xpcj9qqUjJKWly3Es=
-github.com/ipfs/go-ds-s3 v0.7.0/go.mod h1:mX3uuvBNWPfjrf741oiB58O+6ZT9MLa1jT0vqsLPNm8=
 github.com/ipfs/go-fetcher v1.5.0 h1:oreKTKBzja3S09rSmoZlA3KGVlRiUbJ1pQjtB4K6y3w=
 github.com/ipfs/go-fetcher v1.5.0/go.mod h1:5pDZ0393oRF/fHiLmtFZtpMNBQfHOYNPtryWedVuSWE=
 github.com/ipfs/go-filestore v0.0.3/go.mod h1:dvXRykFzyyXN2CdNlRGzDAkXMDPyI+D7JE066SiKLSE=
@@ -1149,6 +1147,8 @@ github.com/openzipkin/zipkin-go v0.2.2/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnh
 github.com/pact-foundation/pact-go v1.0.4/go.mod h1:uExwJY4kCzNPcHRj+hCR/HBbOOIwwtUjcrb0b5/5kLM=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
+github.com/peergos/go-ds-s3 v0.7.8 h1:BpMKiwwYu3nSui+ORHibEE6A3tCeZXp786jBgD9nnFI=
+github.com/peergos/go-ds-s3 v0.7.8/go.mod h1:gYMUulb4lO1EtKx/moE7F2XbXiVErmGSkGvNrFi/28s=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/performancecopilot/speed v3.0.0+incompatible/go.mod h1:/CLtqpZ5gBg1M9iaPbIdPPGyKcA8hKdoy6hAWba7Yac=
 github.com/pierrec/lz4 v1.0.2-0.20190131084431-473cd7ce01a1/go.mod h1:3/3N9NVKO0jef7pBehbT1qWhCMrIgbYNnFAZCqQ5LRc=

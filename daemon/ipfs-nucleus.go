@@ -12,7 +12,7 @@ import (
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
-	s3ds "github.com/ipfs/go-ds-s3"
+	s3ds "github.com/peergos/go-ds-s3"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
