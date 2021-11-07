@@ -1149,6 +1149,8 @@ github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FI
 github.com/pborman/uuid v1.2.0/go.mod h1:X/NO0urCmaxf9VXbdlT7C2Yzkj2IKimNn4k+gtPdI/k=
 github.com/peergos/go-ds-s3 v0.7.8 h1:BpMKiwwYu3nSui+ORHibEE6A3tCeZXp786jBgD9nnFI=
 github.com/peergos/go-ds-s3 v0.7.8/go.mod h1:gYMUulb4lO1EtKx/moE7F2XbXiVErmGSkGvNrFi/28s=
+github.com/peergos/go-ds-s3 v0.7.9 h1:z8xwEQC0XT8jCaoGHu6VtEDNIL3VD4FimgyfMi6dAWA=
+github.com/peergos/go-ds-s3 v0.7.9/go.mod h1:gYMUulb4lO1EtKx/moE7F2XbXiVErmGSkGvNrFi/28s=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
 github.com/performancecopilot/speed v3.0.0+incompatible/go.mod h1:/CLtqpZ5gBg1M9iaPbIdPPGyKcA8hKdoy6hAWba7Yac=
 github.com/pierrec/lz4 v1.0.2-0.20190131084431-473cd7ce01a1/go.mod h1:3/3N9NVKO0jef7pBehbT1qWhCMrIgbYNnFAZCqQ5LRc=
