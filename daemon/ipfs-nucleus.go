@@ -19,6 +19,7 @@ import (
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
 	config "github.com/peergos/ipfs-nucleus/config"
+        pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 	p2phttp "github.com/peergos/ipfs-nucleus/p2phttp"
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
@@ -113,7 +114,7 @@ func main() {
 		return
 	}
 
-	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx)
+	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx))
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
