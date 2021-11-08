@@ -6,6 +6,7 @@ import (
 
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
+	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 )
 
@@ -46,6 +47,11 @@ func NewPeergosBlockstore(bstore blockstore.Blockstore) TypeLimitedBlockstore {
 }
 
 func (bs *PeergosBlockstore) Get(c cid.Cid) (blocks.Block, error) {
+	codec := c.Type()
+	// we only allow these block types
+	if codec != cid.Raw && codec != cid.DagCBOR {
+		return nil, ds.ErrNotFound
+	}
 	return bs.source.Get(c)
 }
 
@@ -55,7 +61,7 @@ func (bs *PeergosBlockstore) DeleteBlock(c cid.Cid) error {
 
 func (bs *PeergosBlockstore) Has(c cid.Cid) (bool, error) {
 	codec := c.Type()
-        // we only allow these block types
+	// we only allow these block types
 	if codec != cid.Raw && codec != cid.DagCBOR {
 		return false, nil
 	}
@@ -63,12 +69,17 @@ func (bs *PeergosBlockstore) Has(c cid.Cid) (bool, error) {
 }
 
 func (bs *PeergosBlockstore) GetSize(c cid.Cid) (int, error) {
+	codec := c.Type()
+	// we only allow these block types
+	if codec != cid.Raw && codec != cid.DagCBOR {
+		return -1, ds.ErrNotFound
+	}
 	return bs.source.GetSize(c)
 }
 
 func (bs *PeergosBlockstore) Put(b blocks.Block) error {
-        codec := b.Cid().Type()
-        // we only allow these block types
+	codec := b.Cid().Type()
+	// we only allow these block types
 	if codec != cid.Raw && codec != cid.DagCBOR {
 		return ErrInvalidBlockType
 	}
