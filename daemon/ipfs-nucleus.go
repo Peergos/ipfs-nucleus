@@ -75,7 +75,8 @@ func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterS
 	if err != nil {
 		panic(err)
 	}
-	return auth.NewAuthBlockstore(cached, allow)
+
+	return auth.NewAuthBlockstore(pbs.NewPeergosBlockstore(cached), allow)
 }
 
 func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
@@ -130,7 +131,7 @@ func main() {
 		return "true" == string(body)
 	}
 
-	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, allow, ctx))
+	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, allow, ctx)
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
