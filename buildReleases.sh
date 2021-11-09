@@ -1,6 +1,6 @@
 #! /bin/sh
 NAME=ipfs
-VERSION=v0.1.1
+VERSION=v0.1.2
 
 GOOS=linux GOARCH=amd64 bash -c 'go build -o releases/'$VERSION'/$GOOS-$GOARCH/'$NAME' daemon/ipfs-nucleus.go'
 GOOS=darwin GOARCH=amd64 bash -c 'go build -o releases/'$VERSION'/$GOOS-$GOARCH/'$NAME' daemon/ipfs-nucleus.go'

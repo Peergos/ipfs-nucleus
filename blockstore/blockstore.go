@@ -6,7 +6,6 @@ import (
 
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
-	ds "github.com/ipfs/go-datastore"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 )
 
@@ -50,7 +49,7 @@ func (bs *PeergosBlockstore) Get(c cid.Cid) (blocks.Block, error) {
 	codec := c.Type()
 	// we only allow these block types
 	if codec != cid.Raw && codec != cid.DagCBOR {
-		return nil, ds.ErrNotFound
+		return nil, blockstore.ErrNotFound
 	}
 	return bs.source.Get(c)
 }
@@ -72,7 +71,7 @@ func (bs *PeergosBlockstore) GetSize(c cid.Cid) (int, error) {
 	codec := c.Type()
 	// we only allow these block types
 	if codec != cid.Raw && codec != cid.DagCBOR {
-		return -1, ds.ErrNotFound
+		return -1, blockstore.ErrNotFound
 	}
 	return bs.source.GetSize(c)
 }
