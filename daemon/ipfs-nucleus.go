@@ -8,22 +8,23 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
-	s3ds "github.com/peergos/go-ds-s3"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/peergos/go-bitswap-auth/auth"
+	s3ds "github.com/peergos/go-ds-s3"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
+	pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	config "github.com/peergos/ipfs-nucleus/config"
-        pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 	p2phttp "github.com/peergos/ipfs-nucleus/p2phttp"
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
@@ -120,7 +121,16 @@ func main() {
 	}
 
 	allow := func(c cid.Cid, p peer.ID, a string) bool {
-		resp, err := http.Get(fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a))
+		url := fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a)
+		client := &http.Client{
+			Timeout: time.Second * 10,
+		}
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return false
+		}
+		req.Host = p.Pretty()
+		resp, err := client.Do(req)
 		if err != nil {
 			return false
 		}
