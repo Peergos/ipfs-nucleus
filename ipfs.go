@@ -3,13 +3,15 @@ package ipfsnucleus
 import (
 	"context"
 	"sync"
+        "fmt"
 	"time"
 
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	ds "github.com/ipfs/go-datastore"
-	provider "github.com/ipfs/go-ipfs-provider"
+	bstore "github.com/ipfs/go-ipfs-blockstore"
+        provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
 	"github.com/ipfs/go-ipfs-provider/simple"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -60,7 +62,8 @@ type Peer struct {
 	store datastore.Batching
 
 	P2P        p2p.P2P
-	bstore     auth.AuthBlockstore
+	bstore     bstore.Blockstore
+	authedbstore     auth.AuthBlockstore
 	bserv      blockservice.BlockService
 	reprovider provider.System
 	allow      func(cid.Cid, peer.ID, string) bool
@@ -70,7 +73,8 @@ type Peer struct {
 // Routing (DHT). Peer implements the ipld.DAGService interface.
 func New(
 	ctx context.Context,
-	blockstore auth.AuthBlockstore,
+	blockstore bstore.Blockstore,
+	authedblockstore auth.AuthBlockstore,
 	rootstore ds.Batching,
 	host host.Host,
 	dht routing.Routing,
@@ -90,6 +94,7 @@ func New(
 		Host:   host,
 		dht:    dht,
 		bstore: blockstore,
+		authedbstore: authedblockstore,
 		store:  rootstore,
 		P2P:    *proxy,
 	}
@@ -111,8 +116,8 @@ func New(
 
 func (p *Peer) setupBlockService() error {
 	bswapnet := network.NewFromIpfsHost(p.Host, p.dht)
-	bswap := bitswap.New(p.ctx, bswapnet, p.bstore)
-	p.bserv = blockservice.New(p.bstore, bswap, p.Host.ID())
+	bswap := bitswap.New(p.ctx, bswapnet, p.authedbstore)
+	p.bserv = blockservice.New(p.authedbstore, bswap, p.Host.ID())
 	return nil
 }
 
@@ -198,7 +203,7 @@ func (p *Peer) Bootstrap(peers []peer.AddrInfo) {
 }
 
 // BlockStore offers access to the blockstore underlying the Peer's DAGService.
-func (p *Peer) BlockStore() auth.AuthBlockstore {
+func (p *Peer) BlockStore() bstore.Blockstore {
 	return p.bstore
 }
 
@@ -211,17 +216,18 @@ func (p *Peer) HasBlock(c cid.Cid) (bool, error) {
 func (p *Peer) GetBlock(w auth.Want) (auth.AuthBlock, error) {
 	local, _ := p.HasBlock(w.Cid)
 	if local {
-		block, err := p.BlockStore().Get(w.Cid, p.Host.ID(), w.Auth)
+		block, err := p.BlockStore().Get(w.Cid)
 		if err != nil {
 			panic(err)
 		}
 		return auth.NewBlock(block, w.Auth), nil
 	}
+        fmt.Println("Falling back to P2P for", w.Cid)
 	return p.bserv.GetBlock(p.ctx, w)
 }
 
 func (p *Peer) PutBlock(b blocks.Block) error {
-	return p.BlockStore().Put(auth.NewBlock(b, ""))
+	return p.BlockStore().Put(b)
 }
 
 func (p *Peer) RmBlock(c cid.Cid) error {

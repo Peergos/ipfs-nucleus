@@ -34,7 +34,9 @@ func (a *HttpApi) BlockGet(rw http.ResponseWriter, req *http.Request) {
 	authz := req.URL.Query()["auth"][0]
 	block, err := a.Nucleus.GetBlock(auth.NewWant(cid, authz))
 	if err != nil {
-		panic(err)
+        fmt.Println("Ipfs error := ", err)
+                handleError(rw, err.Error(), err, 400)
+                return
 	}
 	rw.Write(block.GetAuthedData())
 }
@@ -47,11 +49,13 @@ func (a *HttpApi) BlockPut(rw http.ResponseWriter, req *http.Request) {
 	format := req.URL.Query()["format"][0]
 	reader, e := req.MultipartReader()
 	if e != nil {
-		panic(e)
+                handleError(rw, e.Error(), e, 400)
+                return
 	}
 	part, e := reader.NextPart()
 	if e != nil {
-		panic(e)
+                handleError(rw, e.Error(), e, 400)
+                return
 	}
 	data, _ := ioutil.ReadAll(part)
 	hash, _ := mh.Sum(data, mh.SHA2_256, -1)
@@ -68,7 +72,8 @@ func (a *HttpApi) BlockPut(rw http.ResponseWriter, req *http.Request) {
 	b, _ := blocks.NewBlockWithCid(data, c)
 	err := a.Nucleus.PutBlock(b)
 	if err != nil {
-		panic(err)
+                handleError(rw, err.Error(), err, 400)
+                return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write([]byte(fmt.Sprintf("{\"Hash\":\"%s\"}", c)))
@@ -83,7 +88,8 @@ func (a *HttpApi) BlockRm(rw http.ResponseWriter, req *http.Request) {
 	cid, _ := cid.Decode(arg)
 	err := a.Nucleus.RmBlock(cid)
 	if err != nil {
-		panic(err)
+                handleError(rw, err.Error(), err, 400)
+                return
 	}
 }
 
@@ -97,7 +103,8 @@ func (a *HttpApi) BlockStat(rw http.ResponseWriter, req *http.Request) {
 	authz := req.URL.Query()["auth"][0]
 	block, err := a.Nucleus.GetBlock(auth.NewWant(cid, authz))
 	if err != nil {
-		panic(err)
+                handleError(rw, err.Error(), err, 400)
+                return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	rw.Write([]byte(fmt.Sprintf("{\"Size\":%d}", len(block.GetAuthedData()))))
@@ -110,7 +117,8 @@ func (a *HttpApi) LocalRefs(rw http.ResponseWriter, req *http.Request) {
 	}
 	refs, err := a.Nucleus.GetRefs()
 	if err != nil {
-		panic(err)
+		handleError(rw, err.Error(), err, 400)
+                return
 	}
 	rw.Header().Set("Content-Type", "application/json")
 	for ref := range refs {
@@ -120,4 +128,9 @@ func (a *HttpApi) LocalRefs(rw http.ResponseWriter, req *http.Request) {
 
 func (a *HttpApi) isPost(req *http.Request) bool {
 	return req.Method == "POST"
+}
+
+func handleError(w http.ResponseWriter, msg string, err error, code int) {
+     fmt.Println("IPFS returning HTTP error", code, msg, err)
+	http.Error(w, fmt.Sprintf("%s: %s", msg, err), code)
 }
