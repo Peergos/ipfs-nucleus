@@ -3,6 +3,7 @@ package main
 // This launches an IPFS-Nucleus peer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -11,11 +12,11 @@ import (
 
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
-	bstore "github.com/ipfs/go-ipfs-blockstore"
-        dsmount "github.com/ipfs/go-datastore/mount"
+	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	bstore "github.com/ipfs/go-ipfs-blockstore"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
@@ -120,30 +121,30 @@ func main() {
 		return
 	}
 
-	allow := func(c cid.Cid, p peer.ID, a string) bool {
+	allow := func(c cid.Cid, block []byte, p peer.ID, a string) bool {
 		url := fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a)
 		client := &http.Client{}
-		req, err := http.NewRequest("POST", url, nil)
+		req, err := http.NewRequest("POST", url, bytes.NewReader(block))
 		if err != nil {
 			return false
 		}
 		req.Host = p.Pretty()
 		resp, err := client.Do(req)
 		if err != nil {
-                        fmt.Println("err during allow req", err)
+			fmt.Println("err during allow req", err)
 			return false
 		}
-                defer resp.Body.Close()
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return false
 		}
-                fmt.Println("Allow body:", string(body), "<==>", "true" == string(body))
+		fmt.Println("Allow body:", string(body), "<==>", "true" == string(body))
 		return "true" == string(body)
 	}
 
 	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx)
-        authedBlockstore := auth.NewAuthBlockstore(blockstore, allow)
+	authedBlockstore := auth.NewAuthBlockstore(blockstore, allow)
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
