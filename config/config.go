@@ -31,6 +31,7 @@ type Config struct {
 	BloomFilterSize int
 	Blockstore      DataStoreConfig
 	Rootstore       DataStoreConfig
+        AllowTarget     string
 }
 
 func defaultBootstrapPeers() []peer.AddrInfo {
@@ -52,7 +53,8 @@ func defaultConfig() Config {
 		0,
 		DataStoreConfig{Type: "flatfs", MountPoint: "/blocks", Path: "blocks",
 			Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
-		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}})
+		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}},
+                "http://localhost:8000")
 }
 
 func buildConfig(priv crypto.PrivKey,
@@ -63,7 +65,8 @@ func buildConfig(priv crypto.PrivKey,
 	proxyTargetAddr string,
 	BloomFilterSize int,
 	blockstore DataStoreConfig,
-	rootStore DataStoreConfig) Config {
+	rootStore DataStoreConfig,
+        allowTarget string) Config {
 	swarm := make([]multiaddr.Multiaddr, len(swarmAddrs))
 	var err error
 	for i, addr := range swarmAddrs {
@@ -85,6 +88,7 @@ func buildConfig(priv crypto.PrivKey,
 		BloomFilterSize: BloomFilterSize,
 		Blockstore:      blockstore,
 		Rootstore:       rootStore,
+                AllowTarget:     allowTarget,
 	}
 }
 
@@ -126,6 +130,7 @@ func saveConfig(config Config, filePath string) {
 			"Gateway":     config.Gateway,
 			"Swarm":       config.Swarm,
 			"ProxyTarget": config.ProxyTarget,
+                        "AllowTarget": config.AllowTarget,
 		},
 		"Bootstrap": bootstrap,
 		"Identity": map[string]interface{}{
@@ -218,7 +223,7 @@ func ParseOrGenerateConfig(filePath string) Config {
 		addresses["API"].(string),
 		addresses["Gateway"].(string),
 		addresses["ProxyTarget"].(string),
-		bloomFilterSize, blockstore, rootstore)
+		bloomFilterSize, blockstore, rootstore, addresses["AllowTarget"].(string))
 }
 
 func setConfigField(field []string, value interface{}, json map[string]interface{}) {

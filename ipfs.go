@@ -3,18 +3,15 @@ package ipfsnucleus
 import (
 	"context"
 	"sync"
+        "fmt"
 	"time"
 
-	"github.com/ipfs/go-bitswap"
-	"github.com/ipfs/go-bitswap/network"
 	blocks "github.com/ipfs/go-block-format"
-	blockservice "github.com/ipfs/go-blockservice"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	ds "github.com/ipfs/go-datastore"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	offline "github.com/ipfs/go-ipfs-exchange-offline"
-	provider "github.com/ipfs/go-ipfs-provider"
+	bstore "github.com/ipfs/go-ipfs-blockstore"
+        provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
 	"github.com/ipfs/go-ipfs-provider/simple"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -24,6 +21,10 @@ import (
 	host "github.com/libp2p/go-libp2p-core/host"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	routing "github.com/libp2p/go-libp2p-core/routing"
+	"github.com/peergos/go-bitswap-auth"
+	"github.com/peergos/go-bitswap-auth/auth"
+	"github.com/peergos/go-bitswap-auth/network"
+	"github.com/peergos/ipfs-nucleus/blockservice"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 )
 
@@ -41,8 +42,6 @@ var (
 
 // Config wraps configuration options for the Peer.
 type Config struct {
-	// The DAGService will not announce or retrieve blocks from the network
-	Offline bool
 	// ReprovideInterval sets how often to reprovide records to the DHT
 	ReprovideInterval time.Duration
 }
@@ -62,18 +61,20 @@ type Peer struct {
 	dht   routing.Routing
 	store datastore.Batching
 
-	P2P             p2p.P2P
-	ipld.DAGService // become a DAG service
-	bstore          blockstore.Blockstore
-	bserv           blockservice.BlockService
-	reprovider      provider.System
+	P2P        p2p.P2P
+	bstore     bstore.Blockstore
+	authedbstore     auth.AuthBlockstore
+	bserv      blockservice.BlockService
+	reprovider provider.System
+	allow      func(cid.Cid, peer.ID, string) bool
 }
 
 // New creates an IPFS-Nucleus Peer. It uses the given datastore, libp2p Host and
 // Routing (DHT). Peer implements the ipld.DAGService interface.
 func New(
 	ctx context.Context,
-	blockstore blockstore.Blockstore,
+	blockstore bstore.Blockstore,
+	authedblockstore auth.AuthBlockstore,
 	rootstore ds.Batching,
 	host host.Host,
 	dht routing.Routing,
@@ -93,17 +94,13 @@ func New(
 		Host:   host,
 		dht:    dht,
 		bstore: blockstore,
+		authedbstore: authedblockstore,
 		store:  rootstore,
 		P2P:    *proxy,
 	}
 
 	err := p.setupBlockService()
 	if err != nil {
-		return nil, err
-	}
-	err = p.setupDAGService()
-	if err != nil {
-		p.bserv.Close()
 		return nil, err
 	}
 	err = p.setupReprovider()
@@ -118,24 +115,14 @@ func New(
 }
 
 func (p *Peer) setupBlockService() error {
-	if p.cfg.Offline {
-		p.bserv = blockservice.New(p.bstore, offline.Exchange(p.bstore))
-		return nil
-	}
-
 	bswapnet := network.NewFromIpfsHost(p.Host, p.dht)
-	bswap := bitswap.New(p.ctx, bswapnet, p.bstore)
-	p.bserv = blockservice.New(p.bstore, bswap)
-	return nil
-}
-
-func (p *Peer) setupDAGService() error {
-	p.DAGService = merkledag.NewDAGService(p.bserv)
+	bswap := bitswap.New(p.ctx, bswapnet, p.authedbstore)
+	p.bserv = blockservice.New(p.authedbstore, bswap, p.Host.ID())
 	return nil
 }
 
 func (p *Peer) setupReprovider() error {
-	if p.cfg.Offline || p.cfg.ReprovideInterval < 0 {
+	if p.cfg.ReprovideInterval < 0 {
 		p.reprovider = provider.NewOfflineProvider()
 		return nil
 	}
@@ -155,7 +142,9 @@ func (p *Peer) setupReprovider() error {
 		p.ctx,
 		p.cfg.ReprovideInterval,
 		p.dht,
-		simple.NewBlockstoreProvider(p.bstore),
+		func(ctx context.Context) (<-chan cid.Cid, error) {
+			return p.bstore.AllKeysChan(ctx)
+		},
 	)
 
 	p.reprovider = provider.NewSystem(prov, reprov)
@@ -213,17 +202,8 @@ func (p *Peer) Bootstrap(peers []peer.AddrInfo) {
 	}
 }
 
-// Session returns a session-based NodeGetter.
-func (p *Peer) Session(ctx context.Context) ipld.NodeGetter {
-	ng := merkledag.NewSession(ctx, p.DAGService)
-	if ng == p.DAGService {
-		logger.Warn("DAGService does not support sessions")
-	}
-	return ng
-}
-
 // BlockStore offers access to the blockstore underlying the Peer's DAGService.
-func (p *Peer) BlockStore() blockstore.Blockstore {
+func (p *Peer) BlockStore() bstore.Blockstore {
 	return p.bstore
 }
 
@@ -233,16 +213,17 @@ func (p *Peer) HasBlock(c cid.Cid) (bool, error) {
 	return p.BlockStore().Has(c)
 }
 
-func (p *Peer) GetBlock(c cid.Cid) (blocks.Block, error) {
-	local, _ := p.HasBlock(c)
+func (p *Peer) GetBlock(w auth.Want) (auth.AuthBlock, error) {
+	local, _ := p.HasBlock(w.Cid)
 	if local {
-		block, err := p.BlockStore().Get(c)
+		block, err := p.BlockStore().Get(w.Cid)
 		if err != nil {
 			panic(err)
 		}
-		return block, nil
+		return auth.NewBlock(block, w.Auth), nil
 	}
-	return p.bserv.GetBlock(p.ctx, c)
+        fmt.Println("Falling back to P2P for", w.Cid)
+	return p.bserv.GetBlock(p.ctx, w)
 }
 
 func (p *Peer) PutBlock(b blocks.Block) error {
@@ -255,23 +236,6 @@ func (p *Peer) RmBlock(c cid.Cid) error {
 		return p.BlockStore().DeleteBlock(c)
 	}
 	return nil
-}
-
-func (p *Peer) StatBlock(c cid.Cid) (blocks.Block, error) {
-	local, _ := p.HasBlock(c)
-	if local {
-		block, err := p.BlockStore().Get(c)
-		if err != nil {
-			panic(err)
-		}
-		return block, nil
-	}
-	return p.bserv.GetBlock(p.ctx, c)
-}
-
-func (p *Peer) GetLinks(c cid.Cid) ([]*ipld.Link, error) {
-	n, _ := p.Get(p.ctx, c)
-	return n.Links(), nil
 }
 
 func (p *Peer) GetRefs() (<-chan cid.Cid, error) {

@@ -3,29 +3,35 @@ package main
 // This launches an IPFS-Nucleus peer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
+	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
-	s3ds "github.com/peergos/go-ds-s3"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	bstore "github.com/ipfs/go-ipfs-blockstore"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
+	"github.com/peergos/go-bitswap-auth/auth"
+	s3ds "github.com/peergos/go-ds-s3"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
+	pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	config "github.com/peergos/ipfs-nucleus/config"
-        pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 	p2phttp "github.com/peergos/ipfs-nucleus/p2phttp"
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) blockstore.Blockstore {
+func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) bstore.Blockstore {
 	var rawds ds.Batching
 	var err error
 	if config.Type == "flatfs" {
@@ -71,7 +77,8 @@ func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterS
 	if err != nil {
 		panic(err)
 	}
-	return cached
+
+	return pbs.NewPeergosBlockstore(cached)
 }
 
 func buildDatastore(ipfsDir string, config config.DataStoreConfig) ds.Batching {
@@ -114,7 +121,30 @@ func main() {
 		return
 	}
 
-	blockstore := pbs.NewPeergosBlockstore(buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx))
+	allow := func(c cid.Cid, block []byte, p peer.ID, a string) bool {
+		url := fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a)
+		client := &http.Client{}
+		req, err := http.NewRequest("POST", url, bytes.NewReader(block))
+		if err != nil {
+			return false
+		}
+		req.Host = p.Pretty()
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println("err during allow req", err)
+			return false
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false
+		}
+		fmt.Println("Allow body:", string(body), "<==>", "true" == string(body))
+		return "true" == string(body)
+	}
+
+	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx)
+	authedBlockstore := auth.NewAuthBlockstore(blockstore, allow)
 	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
@@ -128,7 +158,7 @@ func main() {
 		panic(err)
 	}
 
-	nucleus, err := ipfsnucleus.New(ctx, blockstore, rootstore, h, dht, nil)
+	nucleus, err := ipfsnucleus.New(ctx, blockstore, authedBlockstore, rootstore, h, dht, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +179,6 @@ func main() {
 	apiMux.HandleFunc("/api/v0/block/put", api.BlockPut)
 	apiMux.HandleFunc("/api/v0/block/rm", api.BlockRm)
 	apiMux.HandleFunc("/api/v0/block/stat", api.BlockStat)
-	apiMux.HandleFunc("/api/v0/refs", api.Refs)
 	apiMux.HandleFunc("/api/v0/refs/local", api.LocalRefs)
 
 	nucleus.Bootstrap(config.Bootstrap)
