@@ -1,6 +1,6 @@
 # IPFS-Nucleus
 
-IPFS-Nucleus is a minimal block daemon for IPLD based services. You could call it an **IPLDaemon**.
+IPFS-Nucleus is a minimal block daemon for IPLD based services. You could call it an **IPLDaemon**. It includes optional auth for retrieving blocks over bitswap.
 
 It implements the following http api calls from IPFS:
 * id
@@ -10,7 +10,11 @@ It implements the following http api calls from IPFS:
 * block.rm (only needed by GC)
 * refs.local (only needed by GC)
 
-As well as implementing the p2p http proxy (incoming and outgoing). The incoming proxy target is a new config field: Addresses.ProxyTarget
+As well as implementing the p2p http proxy (incoming and outgoing). 
+
+## New config options
+* Addresses.ProxyTarget - The incoming http proxy target
+* Addresses.AllowTarget - The api for allow calls when blocks are requested over bitswap - allow(cid, block data, source peer id, auth string) => boolean
 
 It is designed as a drop in replacment for IPFS with the minimal functionality that [Peergos](https://github.com/peergos/peergos) needs to operate, including running an external GC. It includes support for leveldb datastore and flatfs and S3 based blockstores including bloomfilter based wrapping.
 
