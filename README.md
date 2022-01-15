@@ -6,6 +6,7 @@ It implements the following http api calls from IPFS:
 * id
 * block.get
 * block.put
+* block.has
 * block.stat
 * block.rm (only needed by GC)
 * refs.local (only needed by GC)

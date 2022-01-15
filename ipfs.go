@@ -2,8 +2,8 @@ package ipfsnucleus
 
 import (
 	"context"
+	"fmt"
 	"sync"
-        "fmt"
 	"time"
 
 	blocks "github.com/ipfs/go-block-format"
@@ -11,7 +11,7 @@ import (
 	"github.com/ipfs/go-datastore"
 	ds "github.com/ipfs/go-datastore"
 	bstore "github.com/ipfs/go-ipfs-blockstore"
-        provider "github.com/ipfs/go-ipfs-provider"
+	provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
 	"github.com/ipfs/go-ipfs-provider/simple"
 	cbor "github.com/ipfs/go-ipld-cbor"
@@ -61,12 +61,12 @@ type Peer struct {
 	dht   routing.Routing
 	store datastore.Batching
 
-	P2P        p2p.P2P
-	bstore     bstore.Blockstore
-	authedbstore     auth.AuthBlockstore
-	bserv      blockservice.BlockService
-	reprovider provider.System
-	allow      func(cid.Cid, peer.ID, string) bool
+	P2P          p2p.P2P
+	bstore       bstore.Blockstore
+	authedbstore auth.AuthBlockstore
+	bserv        blockservice.BlockService
+	reprovider   provider.System
+	allow        func(cid.Cid, peer.ID, string) bool
 }
 
 // New creates an IPFS-Nucleus Peer. It uses the given datastore, libp2p Host and
@@ -89,14 +89,14 @@ func New(
 	proxy := p2p.New(host.ID(), host, host.Peerstore())
 
 	p := &Peer{
-		ctx:    ctx,
-		cfg:    cfg,
-		Host:   host,
-		dht:    dht,
-		bstore: blockstore,
+		ctx:          ctx,
+		cfg:          cfg,
+		Host:         host,
+		dht:          dht,
+		bstore:       blockstore,
 		authedbstore: authedblockstore,
-		store:  rootstore,
-		P2P:    *proxy,
+		store:        rootstore,
+		P2P:          *proxy,
 	}
 
 	err := p.setupBlockService()
@@ -222,7 +222,7 @@ func (p *Peer) GetBlock(w auth.Want) (auth.AuthBlock, error) {
 		}
 		return auth.NewBlock(block, w.Auth), nil
 	}
-        fmt.Println("Falling back to P2P for", w.Cid)
+	fmt.Println("Falling back to P2P for", w.Cid)
 	return p.bserv.GetBlock(p.ctx, w)
 }
 
