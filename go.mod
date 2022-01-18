@@ -29,7 +29,7 @@ require (
 	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multihash v0.0.16
-	github.com/peergos/go-bitswap-auth v0.6.0
+	github.com/peergos/go-bitswap-auth v0.6.1
 	github.com/peergos/go-ds-s3 v0.7.9
 	github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1
 	github.com/syndtr/goleveldb v1.0.0

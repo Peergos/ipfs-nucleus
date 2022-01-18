@@ -1157,6 +1157,8 @@ github.com/peergos/go-bitswap-auth v0.5.5 h1:ruuBo44Q+GhhNB8f86F0oJe3lafbC4V66qn
 github.com/peergos/go-bitswap-auth v0.5.5/go.mod h1:JPdeRdtZUxPlnmukFOO+ntNV2JLZKUSt//MpzsIXlWE=
 github.com/peergos/go-bitswap-auth v0.6.0 h1:N+q/9lYVe9nLKGxglxNffQWuIwOjwlZUo8xVgOFNL7U=
 github.com/peergos/go-bitswap-auth v0.6.0/go.mod h1:JPdeRdtZUxPlnmukFOO+ntNV2JLZKUSt//MpzsIXlWE=
+github.com/peergos/go-bitswap-auth v0.6.1 h1:YikwiDsZ5ZFvX0DYYrGpiwnuvFPC9tmn/y02CUyxx5k=
+github.com/peergos/go-bitswap-auth v0.6.1/go.mod h1:JPdeRdtZUxPlnmukFOO+ntNV2JLZKUSt//MpzsIXlWE=
 github.com/peergos/go-ds-s3 v0.7.9 h1:z8xwEQC0XT8jCaoGHu6VtEDNIL3VD4FimgyfMi6dAWA=
 github.com/peergos/go-ds-s3 v0.7.9/go.mod h1:gYMUulb4lO1EtKx/moE7F2XbXiVErmGSkGvNrFi/28s=
 github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1 h1:bI/snUMa3A3cA8WkYN2CetqL1Fzdatc3qZGTpPVm2ss=
