@@ -2,7 +2,6 @@ package ipfsnucleus
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -222,7 +221,6 @@ func (p *Peer) GetBlock(w auth.Want) (auth.AuthBlock, error) {
 		}
 		return auth.NewBlock(block, w.Auth), nil
 	}
-	fmt.Println("Falling back to P2P for", w.Cid)
 	return p.bserv.GetBlock(p.ctx, w)
 }
 
