@@ -112,11 +112,11 @@ func main() {
 			fieldName = os.Args[2]
 			value = os.Args[3]
 		}
-		config.SetField(ipfsDir+"/config", fieldName, value, isJSON)
+		config.SetField(ipfsDir + string(os.PathSeparator) + "config", fieldName, value, isJSON)
 		return
 	}
 
-	config := config.ParseOrGenerateConfig(ipfsDir + "/config")
+	config := config.ParseOrGenerateConfig(ipfsDir + string(os.PathSeparator) + "config")
 	if nArgs > 0 && os.Args[1] == "init" {
 		return
 	}
