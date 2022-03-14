@@ -143,9 +143,9 @@ func main() {
 		return "true" == string(body)
 	}
 
-	blockstore := buildBlockstore(ipfsDir+"/", config.Blockstore, config.BloomFilterSize, ctx)
+	blockstore := buildBlockstore(ipfsDir+string(os.PathSeparator), config.Blockstore, config.BloomFilterSize, ctx)
 	authedBlockstore := auth.NewAuthBlockstore(blockstore, allow)
-	rootstore := buildDatastore(ipfsDir+"/", config.Rootstore)
+	rootstore := buildDatastore(ipfsDir+string(os.PathSeparator), config.Rootstore)
 
 	h, dht, err := ipfsnucleus.SetupLibp2p(
 		ctx,
