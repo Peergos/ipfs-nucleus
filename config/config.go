@@ -21,6 +21,13 @@ type DataStoreConfig struct {
 	Params     map[string]interface{}
 }
 
+type ConnectionManager struct {
+	Type        string
+	LowWater    int
+	HighWater   int
+	GracePeriod string
+}
+
 type Config struct {
 	Bootstrap       []peer.AddrInfo
 	Swarm           []multiaddr.Multiaddr
@@ -31,12 +38,17 @@ type Config struct {
 	BloomFilterSize int
 	Blockstore      DataStoreConfig
 	Rootstore       DataStoreConfig
-        AllowTarget     string
+	AllowTarget     string
+	ConnectionMgr   ConnectionManager
 }
 
 func defaultBootstrapPeers() []peer.AddrInfo {
 	defaults, _ := ipfsconfig.DefaultBootstrapPeers()
 	return defaults
+}
+
+func defaultConnectionManager() ConnectionManager {
+	return ConnectionManager{Type: "basic", LowWater: 10, HighWater: 20, GracePeriod: "30s"}
 }
 
 func defaultConfig() Config {
@@ -54,7 +66,8 @@ func defaultConfig() Config {
 		DataStoreConfig{Type: "flatfs", MountPoint: "/blocks", Path: "blocks",
 			Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
 		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}},
-                "http://localhost:8000")
+		"http://localhost:8000",
+		defaultConnectionManager())
 }
 
 func buildConfig(priv crypto.PrivKey,
@@ -66,7 +79,8 @@ func buildConfig(priv crypto.PrivKey,
 	BloomFilterSize int,
 	blockstore DataStoreConfig,
 	rootStore DataStoreConfig,
-        allowTarget string) Config {
+	allowTarget string,
+	connMgr ConnectionManager) Config {
 	swarm := make([]multiaddr.Multiaddr, len(swarmAddrs))
 	var err error
 	for i, addr := range swarmAddrs {
@@ -88,7 +102,8 @@ func buildConfig(priv crypto.PrivKey,
 		BloomFilterSize: BloomFilterSize,
 		Blockstore:      blockstore,
 		Rootstore:       rootStore,
-                AllowTarget:     allowTarget,
+		AllowTarget:     allowTarget,
+		ConnectionMgr:   connMgr,
 	}
 }
 
@@ -130,7 +145,7 @@ func saveConfig(config Config, filePath string) {
 			"Gateway":     config.Gateway,
 			"Swarm":       config.Swarm,
 			"ProxyTarget": config.ProxyTarget,
-                        "AllowTarget": config.AllowTarget,
+			"AllowTarget": config.AllowTarget,
 		},
 		"Bootstrap": bootstrap,
 		"Identity": map[string]interface{}{
@@ -142,6 +157,14 @@ func saveConfig(config Config, filePath string) {
 			"Spec": map[string]interface{}{
 				"mounts": dstores,
 				"type":   "mount",
+			},
+		},
+		"Swarm": map[string]interface{}{
+			"ConnMgr": map[string]interface{}{
+				"Type":        config.ConnectionMgr.Type,
+				"LowWater":    config.ConnectionMgr.LowWater,
+				"HighWater":   config.ConnectionMgr.HighWater,
+				"GracePeriod": config.ConnectionMgr.GracePeriod,
 			},
 		},
 	}
@@ -217,13 +240,31 @@ func ParseOrGenerateConfig(filePath string) Config {
 	dsmounts := ds["Spec"].(map[string]interface{})["mounts"].([]interface{})
 	blockstore := parseDataStoreConfig(dsmounts[0].(map[string]interface{}))
 	rootstore := parseDataStoreConfig(dsmounts[1].(map[string]interface{}))
+	conns := result["Swarm"].(map[string]interface{})
+	var cm map[string]interface{}
+	if conns != nil {
+		cm = conns["ConnMgr"].(map[string]interface{})
+	} else {
+		cm = nil
+	}
+	var connMgr ConnectionManager
+	if cm != nil {
+		connMgr = ConnectionManager{Type: cm["Type"].(string), LowWater: int(cm["LowWater"].(float64)),
+			HighWater: int(cm["HighWater"].(float64)), GracePeriod: cm["GracePeriod"].(string)}
+	} else {
+		connMgr = defaultConnectionManager()
+	}
 	return buildConfig(priv,
 		bootstrap,
 		swarm,
 		addresses["API"].(string),
 		addresses["Gateway"].(string),
 		addresses["ProxyTarget"].(string),
-		bloomFilterSize, blockstore, rootstore, addresses["AllowTarget"].(string))
+		bloomFilterSize,
+		blockstore,
+		rootstore,
+		addresses["AllowTarget"].(string),
+		connMgr)
 }
 
 func setConfigField(field []string, value interface{}, json map[string]interface{}) {

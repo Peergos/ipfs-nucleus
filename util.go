@@ -2,12 +2,10 @@ package ipfsnucleus
 
 import (
 	"context"
-	"time"
 
 	datastore "github.com/ipfs/go-datastore"
 	ipns "github.com/ipfs/go-ipns"
 	"github.com/libp2p/go-libp2p"
-	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	host "github.com/libp2p/go-libp2p-core/host"
 	routing "github.com/libp2p/go-libp2p-core/routing"
@@ -24,7 +22,6 @@ import (
 // SetupLibp2p.
 var Libp2pOptionsExtra = []libp2p.Option{
 	libp2p.NATPortMap(),
-	libp2p.ConnectionManager(connmgr.NewConnManager(100, 600, time.Minute)),
 	libp2p.EnableAutoRelay(),
 	libp2p.EnableNATService(),
 	libp2p.Security(libp2ptls.ID, libp2ptls.New),

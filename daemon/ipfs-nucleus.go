@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -17,6 +18,8 @@ import (
 	levelds "github.com/ipfs/go-ds-leveldb"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	bstore "github.com/ipfs/go-ipfs-blockstore"
+	"github.com/libp2p/go-libp2p"
+	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	protocol "github.com/libp2p/go-libp2p-core/protocol"
 	manet "github.com/multiformats/go-multiaddr/net"
@@ -112,7 +115,7 @@ func main() {
 			fieldName = os.Args[2]
 			value = os.Args[3]
 		}
-		config.SetField(ipfsDir + string(os.PathSeparator) + "config", fieldName, value, isJSON)
+		config.SetField(ipfsDir+string(os.PathSeparator)+"config", fieldName, value, isJSON)
 		return
 	}
 
@@ -147,12 +150,19 @@ func main() {
 	authedBlockstore := auth.NewAuthBlockstore(blockstore, allow)
 	rootstore := buildDatastore(ipfsDir+string(os.PathSeparator), config.Rootstore)
 
+	grace, err := time.ParseDuration(config.ConnectionMgr.GracePeriod)
+	if err != nil {
+		panic(fmt.Errorf("parsing Swarm.ConnMgr.GracePeriod: %s", err))
+	}
+	options := ipfsnucleus.Libp2pOptionsExtra
+	options = append(options, libp2p.ConnectionManager(connmgr.NewConnManager(config.ConnectionMgr.LowWater,
+		config.ConnectionMgr.HighWater, grace)))
 	h, dht, err := ipfsnucleus.SetupLibp2p(
 		ctx,
 		config.HostKey,
 		config.Swarm,
 		rootstore,
-		ipfsnucleus.Libp2pOptionsExtra...,
+		options...,
 	)
 	if err != nil {
 		panic(err)
