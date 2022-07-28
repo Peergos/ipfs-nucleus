@@ -240,7 +240,13 @@ func ParseOrGenerateConfig(filePath string) Config {
 	dsmounts := ds["Spec"].(map[string]interface{})["mounts"].([]interface{})
 	blockstore := parseDataStoreConfig(dsmounts[0].(map[string]interface{}))
 	rootstore := parseDataStoreConfig(dsmounts[1].(map[string]interface{}))
-	conns := result["Swarm"].(map[string]interface{})
+	connsJson := result["Swarm"]
+	var conns map[string]interface{}
+	if connsJson != nil {
+		conns = connsJson.(map[string]interface{})
+	} else {
+		conns = nil
+	}
 	var cm map[string]interface{}
 	if conns != nil {
 		cm = conns["ConnMgr"].(map[string]interface{})
