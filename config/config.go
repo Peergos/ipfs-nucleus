@@ -58,20 +58,8 @@ func defaultConfig() Config {
 	if err != nil {
 		panic(err)
 	}
-	// we want to leave cpu time for peergos to run:
-	// (host cpus, ipfs-nucelus cpus) in
-	// (1, 1), (2, 1), (3, 1), (4, 1), (5, 2), (6, 2), (7, 2), (8, 2)
-	var cpuCount int
-	if runtime.NumCPU() < 5 {
-		cpuCount = 1
-	} else if runtime.NumCPU() < 9 {
-		cpuCount = 2
-	} else if runtime.NumCPU() < 13 {
-		cpuCount = 3
-	} else {
-		cpuCount = 4
-	}
 
+	cpuCount := defaultCpuCount()
 	return buildConfig(priv,
 		defaultBootstrapPeers(),
 		[]string{"/ip4/0.0.0.0/tcp/4001", "/ip6/::/tcp/4001"},
@@ -85,6 +73,21 @@ func defaultConfig() Config {
 		"http://localhost:8000",
 		cpuCount,
 		defaultConnectionManager())
+}
+
+func defaultCpuCount() int {
+	// we want to leave cpu time for peergos to run:
+	// (host cpus, ipfs-nucelus cpus) in
+	// (1, 1), (2, 1), (3, 1), (4, 1), (5, 2), (6, 2), (7, 2), (8, 2)
+	if runtime.NumCPU() < 5 {
+		return 1
+	} else if runtime.NumCPU() < 9 {
+		return 2
+	} else if runtime.NumCPU() < 13 {
+		return 3
+	} else {
+		return 4
+	}
 }
 
 func buildConfig(priv crypto.PrivKey,
@@ -121,6 +124,7 @@ func buildConfig(priv crypto.PrivKey,
 		Blockstore:      blockstore,
 		Rootstore:       rootStore,
 		AllowTarget:     allowTarget,
+		CpuCount:        cpuCount,
 		ConnectionMgr:   connMgr,
 	}
 }
@@ -256,7 +260,12 @@ func ParseOrGenerateConfig(filePath string) Config {
 
 	ds := result["Datastore"].(map[string]interface{})
 	bloomFilterSize := int(ds["BloomFilterSize"].(float64))
-	cpuCount := int(ds["CpuCount"].(float64))
+	var cpuCount int
+	if ds["CpuCount"] != nil {
+		cpuCount = int(ds["CpuCount"].(float64))
+	} else {
+		cpuCount = defaultCpuCount()
+	}
 	dsmounts := ds["Spec"].(map[string]interface{})["mounts"].([]interface{})
 	blockstore := parseDataStoreConfig(dsmounts[0].(map[string]interface{}))
 	rootstore := parseDataStoreConfig(dsmounts[1].(map[string]interface{}))
