@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+        "runtime"
 	"time"
 
 	"github.com/ipfs/go-cid"
@@ -123,6 +124,8 @@ func main() {
 	if nArgs > 0 && os.Args[1] == "init" {
 		return
 	}
+
+        runtime.GOMAXPROCS(config.CpuCount)
 
 	allow := func(c cid.Cid, block []byte, p peer.ID, a string) bool {
 		url := fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a)

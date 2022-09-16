@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	ipfsconfig "github.com/ipfs/go-ipfs-config"
@@ -40,6 +41,7 @@ type Config struct {
 	Rootstore       DataStoreConfig
 	AllowTarget     string
 	ConnectionMgr   ConnectionManager
+	CpuCount        int
 }
 
 func defaultBootstrapPeers() []peer.AddrInfo {
@@ -56,6 +58,20 @@ func defaultConfig() Config {
 	if err != nil {
 		panic(err)
 	}
+	// we want to leave cpu time for peergos to run:
+	// (host cpus, ipfs-nucelus cpus) in
+	// (1, 1), (2, 1), (3, 1), (4, 1), (5, 2), (6, 2), (7, 2), (8, 2)
+	var cpuCount int
+	if runtime.NumCPU() < 5 {
+		cpuCount = 1
+	} else if runtime.NumCPU() < 9 {
+		cpuCount = 2
+	} else if runtime.NumCPU() < 13 {
+		cpuCount = 3
+	} else {
+		cpuCount = 4
+	}
+
 	return buildConfig(priv,
 		defaultBootstrapPeers(),
 		[]string{"/ip4/0.0.0.0/tcp/4001", "/ip6/::/tcp/4001"},
@@ -67,6 +83,7 @@ func defaultConfig() Config {
 			Params: map[string]interface{}{"sync": true, "shardFunc": "/repo/flatfs/shard/v1/next-to-last/2"}},
 		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}},
 		"http://localhost:8000",
+		cpuCount,
 		defaultConnectionManager())
 }
 
@@ -80,6 +97,7 @@ func buildConfig(priv crypto.PrivKey,
 	blockstore DataStoreConfig,
 	rootStore DataStoreConfig,
 	allowTarget string,
+	cpuCount int,
 	connMgr ConnectionManager) Config {
 	swarm := make([]multiaddr.Multiaddr, len(swarmAddrs))
 	var err error
@@ -159,6 +177,7 @@ func saveConfig(config Config, filePath string) {
 				"type":   "mount",
 			},
 		},
+		"CpuCount": config.CpuCount,
 		"Swarm": map[string]interface{}{
 			"ConnMgr": map[string]interface{}{
 				"Type":        config.ConnectionMgr.Type,
@@ -237,6 +256,7 @@ func ParseOrGenerateConfig(filePath string) Config {
 
 	ds := result["Datastore"].(map[string]interface{})
 	bloomFilterSize := int(ds["BloomFilterSize"].(float64))
+	cpuCount := int(ds["CpuCount"].(float64))
 	dsmounts := ds["Spec"].(map[string]interface{})["mounts"].([]interface{})
 	blockstore := parseDataStoreConfig(dsmounts[0].(map[string]interface{}))
 	rootstore := parseDataStoreConfig(dsmounts[1].(map[string]interface{}))
@@ -270,6 +290,7 @@ func ParseOrGenerateConfig(filePath string) Config {
 		blockstore,
 		rootstore,
 		addresses["AllowTarget"].(string),
+		cpuCount,
 		connMgr)
 }
 
