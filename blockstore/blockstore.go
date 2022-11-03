@@ -6,7 +6,7 @@ import (
 
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	blockstore "github.com/peergos/go-ipfs-blockstore"
 )
 
 var ErrInvalidBlockType = errors.New("Invalid block type")

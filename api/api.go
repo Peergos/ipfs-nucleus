@@ -93,6 +93,20 @@ func (a *HttpApi) BlockRm(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (a *HttpApi) BloomAdd(rw http.ResponseWriter, req *http.Request) {
+	if !a.isPost(req) {
+		rw.WriteHeader(http.StatusForbidden)
+		return
+	}
+	arg := req.URL.Query()["arg"][0]
+	cid, _ := cid.Decode(arg)
+	err := a.Nucleus.BloomAdd(cid)
+	if err != nil {
+		handleError(rw, err.Error(), err, 400)
+		return
+	}
+}
+
 func (a *HttpApi) BlockStat(rw http.ResponseWriter, req *http.Request) {
 	if !a.isPost(req) {
 		rw.WriteHeader(http.StatusForbidden)

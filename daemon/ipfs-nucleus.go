@@ -18,7 +18,7 @@ import (
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
 	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	bstore "github.com/ipfs/go-ipfs-blockstore"
+	bstore "github.com/peergos/go-ipfs-blockstore"
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	peer "github.com/libp2p/go-libp2p-core/peer"

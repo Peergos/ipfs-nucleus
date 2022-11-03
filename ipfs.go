@@ -9,7 +9,6 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	ds "github.com/ipfs/go-datastore"
-	bstore "github.com/ipfs/go-ipfs-blockstore"
 	provider "github.com/ipfs/go-ipfs-provider"
 	"github.com/ipfs/go-ipfs-provider/queue"
 	"github.com/ipfs/go-ipfs-provider/simple"
@@ -24,6 +23,7 @@ import (
 	"github.com/peergos/go-bitswap-auth/auth"
 	"github.com/peergos/go-bitswap-auth/network"
 	"github.com/peergos/ipfs-nucleus/blockservice"
+	bstore "github.com/peergos/go-ipfs-blockstore"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 )
 
@@ -234,6 +234,10 @@ func (p *Peer) RmBlock(c cid.Cid) error {
 		return p.BlockStore().DeleteBlock(c)
 	}
 	return nil
+}
+
+func (p *Peer) BloomAdd(c cid.Cid) error {
+     return p.BlockStore().BloomAdd(c)
 }
 
 func (p *Peer) GetRefs() (<-chan cid.Cid, error) {
