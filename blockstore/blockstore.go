@@ -12,6 +12,7 @@ import (
 var ErrInvalidBlockType = errors.New("Invalid block type")
 
 type TypeLimitedBlockstore interface {
+	BloomAdd(cid.Cid) error
 	DeleteBlock(cid.Cid) error
 	Has(cid.Cid) (bool, error)
 	Get(cid.Cid) (blocks.Block, error)
@@ -56,6 +57,10 @@ func (bs *PeergosBlockstore) Get(c cid.Cid) (blocks.Block, error) {
 
 func (bs *PeergosBlockstore) DeleteBlock(c cid.Cid) error {
 	return bs.source.DeleteBlock(c)
+}
+
+func (bs *PeergosBlockstore) BloomAdd(c cid.Cid) error {
+	return bs.source.BloomAdd(c)
 }
 
 func (bs *PeergosBlockstore) Has(c cid.Cid) (bool, error) {
