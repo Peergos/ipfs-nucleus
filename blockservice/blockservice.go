@@ -9,7 +9,7 @@ import (
 	"io"
 
 	cid "github.com/ipfs/go-cid"
-	blockstore "github.com/peergos/go-ipfs-blockstore"
+	blockstore "github.com/ipfs/go-ipfs-blockstore"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/ipfs/go-verifcid"
 	peer "github.com/libp2p/go-libp2p-core/peer"
