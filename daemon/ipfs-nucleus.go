@@ -190,6 +190,7 @@ func main() {
 	apiMux.HandleFunc("/api/v0/block/get", api.BlockGet)
 	apiMux.HandleFunc("/api/v0/block/put", api.BlockPut)
 	apiMux.HandleFunc("/api/v0/block/rm", api.BlockRm)
+	apiMux.HandleFunc("/api/v0/bloom/add", api.BloomAdd)
 	apiMux.HandleFunc("/api/v0/block/has", api.HasBlock)
 	apiMux.HandleFunc("/api/v0/block/stat", api.BlockStat)
 	apiMux.HandleFunc("/api/v0/refs/local", api.LocalRefs)
