@@ -9,7 +9,6 @@ require (
 	github.com/ipfs/go-ds-flatfs v0.4.5
 	github.com/ipfs/go-ds-leveldb v0.4.2
 	github.com/ipfs/go-ipfs v0.10.0
-	github.com/ipfs/go-ipfs-blockstore v0.1.6 // indirect
 	github.com/ipfs/go-ipfs-config v0.16.0
 	github.com/ipfs/go-ipfs-provider v0.6.1
 	github.com/ipfs/go-ipld-cbor v0.0.5
@@ -29,7 +28,7 @@ require (
 	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multihash v0.0.16
-	github.com/peergos/go-bitswap-auth v0.6.1
+	github.com/peergos/go-bitswap-auth v0.6.2
 	github.com/peergos/go-ds-s3 v0.7.9
 	github.com/peergos/go-ipfs-blockstore v0.1.7
 	github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1
