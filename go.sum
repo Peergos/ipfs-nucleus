@@ -1155,6 +1155,8 @@ github.com/peergos/go-ds-s3 v0.7.9 h1:z8xwEQC0XT8jCaoGHu6VtEDNIL3VD4FimgyfMi6dAW
 github.com/peergos/go-ds-s3 v0.7.9/go.mod h1:gYMUulb4lO1EtKx/moE7F2XbXiVErmGSkGvNrFi/28s=
 github.com/peergos/go-ipfs-blockstore v0.1.7 h1:NEPH9l/53eeeUl/zggKUp0BfsjdO7nJsLVTLX2NfcL0=
 github.com/peergos/go-ipfs-blockstore v0.1.7/go.mod h1:koGvHkyXglmuo5f14KOFcsN9M6lj/uGoNqWhYGUuipg=
+github.com/peergos/go-ipfs-blockstore v0.1.8 h1:HIB5M/gDBTD8vZd2cYmJcFkTAknoNnIKDa4dk+QHggU=
+github.com/peergos/go-ipfs-blockstore v0.1.8/go.mod h1:koGvHkyXglmuo5f14KOFcsN9M6lj/uGoNqWhYGUuipg=
 github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1 h1:bI/snUMa3A3cA8WkYN2CetqL1Fzdatc3qZGTpPVm2ss=
 github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1/go.mod h1:oeDqKxAZJ7TDV5PaKUYHhzTk8EXJ8S25E2gt7+YqZGo=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
