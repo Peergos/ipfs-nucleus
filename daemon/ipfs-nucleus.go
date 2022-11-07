@@ -17,8 +17,7 @@ import (
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
-	bstore "github.com/ipfs/go-ipfs-blockstore"
+	blockstore "github.com/peergos/go-ipfs-blockstore"
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -35,7 +34,7 @@ import (
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
-func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) bstore.Blockstore {
+func buildBlockstore(ipfsDir string, config config.DataStoreConfig, bloomFilterSize int, ctx context.Context) blockstore.Blockstore {
 	var rawds ds.Batching
 	var err error
 	if config.Type == "flatfs" {
@@ -191,6 +190,7 @@ func main() {
 	apiMux.HandleFunc("/api/v0/block/get", api.BlockGet)
 	apiMux.HandleFunc("/api/v0/block/put", api.BlockPut)
 	apiMux.HandleFunc("/api/v0/block/rm", api.BlockRm)
+	apiMux.HandleFunc("/api/v0/bloom/add", api.BloomAdd)
 	apiMux.HandleFunc("/api/v0/block/has", api.HasBlock)
 	apiMux.HandleFunc("/api/v0/block/stat", api.BlockStat)
 	apiMux.HandleFunc("/api/v0/refs/local", api.LocalRefs)

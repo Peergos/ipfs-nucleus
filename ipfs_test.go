@@ -10,7 +10,7 @@ import (
 	"github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
-	blockstore "github.com/ipfs/go-ipfs-blockstore"
+	blockstore "github.com/peergos/go-ipfs-blockstore"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
@@ -22,7 +22,7 @@ func NewInMemoryDatastore() datastore.Batching {
 	return dssync.MutexWrap(datastore.NewMapDatastore())
 }
 
-func allowAll(cid.Cid, peer.ID, string) bool {
+func allowAll(cid.Cid, []byte, peer.ID, string) bool {
 	return true
 }
 
@@ -31,8 +31,10 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 
 	ds1 := NewInMemoryDatastore()
 	ds2 := NewInMemoryDatastore()
-	bs1 := auth.NewAuthBlockstore(blockstore.NewBlockstore(ds1), allowAll)
-	bs2 := auth.NewAuthBlockstore(blockstore.NewBlockstore(ds2), allowAll)
+        bs1 := blockstore.NewBlockstore(ds1)
+	abs1 := auth.NewAuthBlockstore(bs1, allowAll)
+	bs2 := blockstore.NewBlockstore(ds2)
+	abs2 := auth.NewAuthBlockstore(bs2, allowAll)
 
 	priv1, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
@@ -85,12 +87,12 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 			}
 		}
 	}
-	p1, err = New(ctx, bs1, ds1, h1, dht1, nil)
+	p1, err = New(ctx, bs1, abs1, ds1, h1, dht1, nil)
 	if err != nil {
 		closer(t)
 		t.Fatal(err)
 	}
-	p2, err = New(ctx, bs2, ds2, h2, dht2, nil)
+	p2, err = New(ctx, bs2, abs2, ds2, h2, dht2, nil)
 	if err != nil {
 		closer(t)
 		t.Fatal(err)
