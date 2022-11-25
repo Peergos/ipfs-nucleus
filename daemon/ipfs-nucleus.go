@@ -9,7 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-        "runtime"
+	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/ipfs/go-cid"
@@ -17,7 +18,6 @@ import (
 	dsmount "github.com/ipfs/go-datastore/mount"
 	flatfs "github.com/ipfs/go-ds-flatfs"
 	levelds "github.com/ipfs/go-ds-leveldb"
-	blockstore "github.com/peergos/go-ipfs-blockstore"
 	"github.com/libp2p/go-libp2p"
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	peer "github.com/libp2p/go-libp2p-core/peer"
@@ -25,12 +25,14 @@ import (
 	manet "github.com/multiformats/go-multiaddr/net"
 	"github.com/peergos/go-bitswap-auth/auth"
 	s3ds "github.com/peergos/go-ds-s3"
+	blockstore "github.com/peergos/go-ipfs-blockstore"
 	ipfsnucleus "github.com/peergos/ipfs-nucleus"
 	api "github.com/peergos/ipfs-nucleus/api"
 	pbs "github.com/peergos/ipfs-nucleus/blockstore"
 	config "github.com/peergos/ipfs-nucleus/config"
 	p2p "github.com/peergos/ipfs-nucleus/p2p"
 	p2phttp "github.com/peergos/ipfs-nucleus/p2phttp"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	ldbopts "github.com/syndtr/goleveldb/leveldb/opt"
 )
 
@@ -124,7 +126,7 @@ func main() {
 		return
 	}
 
-        runtime.GOMAXPROCS(config.CpuCount)
+	runtime.GOMAXPROCS(config.CpuCount)
 
 	allow := func(c cid.Cid, block []byte, p peer.ID, a string) bool {
 		url := fmt.Sprintf("%s?cid=%s&peer=%s&auth=%s", config.AllowTarget, c, p, a)
@@ -199,6 +201,12 @@ func main() {
 
 	apiAddr, err := manet.ToNetAddr(config.Api)
 	go serve(apiAddr.String(), apiMux)
+
+	if config.Metrics.Enabled {
+		metricsMux := http.NewServeMux()
+		metricsMux.Handle("/metrics", promhttp.Handler())
+		go serve(config.Metrics.Address+":"+strconv.Itoa(config.Metrics.Port), metricsMux)
+	}
 
 	p2p := &p2phttp.P2PProxy{nucleus}
 	gatewayMux := http.NewServeMux()
