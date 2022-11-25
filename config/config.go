@@ -29,6 +29,12 @@ type ConnectionManager struct {
 	GracePeriod string
 }
 
+type Metrics struct {
+	Enabled bool
+	Address string
+	Port    int
+}
+
 type Config struct {
 	Bootstrap       []peer.AddrInfo
 	Swarm           []multiaddr.Multiaddr
@@ -42,6 +48,7 @@ type Config struct {
 	AllowTarget     string
 	ConnectionMgr   ConnectionManager
 	CpuCount        int
+	Metrics         Metrics
 }
 
 func defaultBootstrapPeers() []peer.AddrInfo {
@@ -72,6 +79,7 @@ func defaultConfig() Config {
 		DataStoreConfig{Type: "levelds", MountPoint: "/", Path: "datastore", Params: map[string]interface{}{"compression": "none"}},
 		"http://localhost:8000",
 		cpuCount,
+		Metrics{Enabled: false},
 		defaultConnectionManager())
 }
 
@@ -101,6 +109,7 @@ func buildConfig(priv crypto.PrivKey,
 	rootStore DataStoreConfig,
 	allowTarget string,
 	cpuCount int,
+	metrics Metrics,
 	connMgr ConnectionManager) Config {
 	swarm := make([]multiaddr.Multiaddr, len(swarmAddrs))
 	var err error
@@ -126,6 +135,7 @@ func buildConfig(priv crypto.PrivKey,
 		AllowTarget:     allowTarget,
 		CpuCount:        cpuCount,
 		ConnectionMgr:   connMgr,
+		Metrics:         metrics,
 	}
 }
 
@@ -189,6 +199,11 @@ func saveConfig(config Config, filePath string) {
 				"HighWater":   config.ConnectionMgr.HighWater,
 				"GracePeriod": config.ConnectionMgr.GracePeriod,
 			},
+		},
+		"Metrics": map[string]interface{}{
+			"Enabled": config.Metrics.Enabled,
+			"Address": config.Metrics.Address,
+			"Port":    config.Metrics.Port,
 		},
 	}
 	writeConfigJSON(result, filePath)
@@ -289,6 +304,11 @@ func ParseOrGenerateConfig(filePath string) Config {
 	} else {
 		connMgr = defaultConnectionManager()
 	}
+	metricsJson := result["Metrics"].(map[string]interface{})
+	var metrics Metrics
+	if metricsJson != nil {
+		metrics = Metrics{Enabled: metricsJson["Enabled"].(bool), Address: metricsJson["Address"].(string), Port: int(metricsJson["Port"].(float64))}
+	}
 	return buildConfig(priv,
 		bootstrap,
 		swarm,
@@ -300,6 +320,7 @@ func ParseOrGenerateConfig(filePath string) Config {
 		rootstore,
 		addresses["AllowTarget"].(string),
 		cpuCount,
+		metrics,
 		connMgr)
 }
 
