@@ -307,7 +307,9 @@ func ParseOrGenerateConfig(filePath string) Config {
 	metricsJson := result["Metrics"].(map[string]interface{})
 	var metrics Metrics
 	if metricsJson != nil {
-		metrics = Metrics{Enabled: metricsJson["Enabled"].(bool), Address: metricsJson["Address"].(string), Port: int(metricsJson["Port"].(float64))}
+		enabled := metricsJson["Enabled"].(bool)
+                port := int(metricsJson["Port"].(float64))
+		metrics = Metrics{Enabled: enabled, Address: metricsJson["Address"].(string), Port: port}
 	}
 	return buildConfig(priv,
 		bootstrap,
