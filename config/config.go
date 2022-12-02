@@ -304,11 +304,16 @@ func ParseOrGenerateConfig(filePath string) Config {
 	} else {
 		connMgr = defaultConnectionManager()
 	}
-	metricsJson := result["Metrics"].(map[string]interface{})
+	var metricsJson map[string]interface{}
+	if result["Metrics"] != nil {
+		metricsJson = result["Metrics"].(map[string]interface{})
+	} else {
+		metricsJson = nil
+	}
 	var metrics Metrics
 	if metricsJson != nil {
 		enabled := metricsJson["Enabled"].(bool)
-                port := int(metricsJson["Port"].(float64))
+		port := int(metricsJson["Port"].(float64))
 		metrics = Metrics{Enabled: enabled, Address: metricsJson["Address"].(string), Port: port}
 	}
 	return buildConfig(priv,
