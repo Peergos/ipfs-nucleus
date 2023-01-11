@@ -3,7 +3,7 @@ package ipfsnucleus
 import (
 	"bytes"
 	"context"
-	"io"
+        "io"
 	"testing"
 
 	blocks "github.com/ipfs/go-block-format"
@@ -117,7 +117,7 @@ func TestBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	res, err := p2.GetBlock(auth.NewWant(c, "auth"))
+	res, err := p2.GetBlock(auth.NewWant(c, "1234567890abcdef"))
 	if err != nil {
 		t.Fatal(err)
 	}
