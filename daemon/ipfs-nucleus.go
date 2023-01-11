@@ -146,7 +146,7 @@ func main() {
 		if err != nil {
 			return false
 		}
-		fmt.Println("Allow body:", string(body), "<==>", "true" == string(body))
+		fmt.Println("Allow block:", string(body), "source", p, "cid", c)
 		return "true" == string(body)
 	}
 
