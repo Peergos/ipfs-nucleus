@@ -3,19 +3,19 @@ package ipfsnucleus
 import (
 	"bytes"
 	"context"
-        "io"
+	"io"
 	"testing"
 
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	datastore "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
-	blockstore "github.com/peergos/go-ipfs-blockstore"
 	crypto "github.com/libp2p/go-libp2p-core/crypto"
 	peer "github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	mh "github.com/multiformats/go-multihash"
 	"github.com/peergos/go-bitswap-auth/auth"
+	blockstore "github.com/peergos/go-ipfs-blockstore"
 )
 
 func NewInMemoryDatastore() datastore.Batching {
@@ -26,15 +26,26 @@ func allowAll(cid.Cid, []byte, peer.ID, string) bool {
 	return true
 }
 
-func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
+func buildBlockstore(useBloom bool, ctx context.Context) (ds datastore.Batching, bs blockstore.Blockstore, abs auth.AuthBlockstore) {
+	ds = NewInMemoryDatastore()
+	bs = blockstore.NewBlockstore(ds)
+	cacheOpts := blockstore.DefaultCacheOpts()
+	if useBloom {
+		cacheOpts.HasBloomFilterSize = 268435456
+	}
+	cached, err := blockstore.CachedBlockstore(ctx, bs, cacheOpts)
+	if err != nil {
+		panic(err)
+	}
+	abs = auth.NewAuthBlockstore(bs, allowAll)
+	return ds, cached, abs
+}
+
+func setupPeers(t *testing.T, useBloom bool) (p1, p2 *Peer, closer func(t *testing.T)) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	ds1 := NewInMemoryDatastore()
-	ds2 := NewInMemoryDatastore()
-        bs1 := blockstore.NewBlockstore(ds1)
-	abs1 := auth.NewAuthBlockstore(bs1, allowAll)
-	bs2 := blockstore.NewBlockstore(ds2)
-	abs2 := auth.NewAuthBlockstore(bs2, allowAll)
+	ds1, bs1, abs1 := buildBlockstore(useBloom, ctx)
+	ds2, bs2, abs2 := buildBlockstore(useBloom, ctx)
 
 	priv1, _, err := crypto.GenerateKeyPair(crypto.RSA, 2048)
 	if err != nil {
@@ -105,7 +116,34 @@ func setupPeers(t *testing.T) (p1, p2 *Peer, closer func(t *testing.T)) {
 }
 
 func TestBlock(t *testing.T) {
-	p1, p2, closer := setupPeers(t)
+	p1, p2, closer := setupPeers(t, false)
+	defer closer(t)
+
+	content := []byte("hola")
+	hash, _ := mh.Sum(content, mh.SHA2_256, -1)
+	c := cid.NewCidV1(cid.Raw, hash)
+	block, _ := blocks.NewBlockWithCid(content, c)
+	err := p1.PutBlock(block)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	res, err := p2.GetBlock(auth.NewWant(c, "1234567890abcdef"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content2 := res.GetAuthedData()
+
+	if !bytes.Equal(content, content2) {
+		t.Error(string(content))
+		t.Error(string(content2))
+		t.Error("different content put and retrieved")
+	}
+}
+
+func TestBlockBloom(t *testing.T) {
+	p1, p2, closer := setupPeers(t, true)
 	defer closer(t)
 
 	content := []byte("hola")
