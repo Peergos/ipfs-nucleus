@@ -11,6 +11,7 @@ import (
 	routing "github.com/libp2p/go-libp2p-core/routing"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	dualdht "github.com/libp2p/go-libp2p-kad-dht/dual"
+	libp2pnoise "github.com/libp2p/go-libp2p-noise"
 	libp2pquic "github.com/libp2p/go-libp2p-quic-transport"
 	record "github.com/libp2p/go-libp2p-record"
 	libp2ptls "github.com/libp2p/go-libp2p-tls"
@@ -24,8 +25,9 @@ var Libp2pOptionsExtra = []libp2p.Option{
 	libp2p.NATPortMap(),
 	libp2p.EnableAutoRelay(),
 	libp2p.EnableNATService(),
+        libp2p.Transport(libp2pquic.NewTransport),
+	libp2p.Security(libp2pnoise.ID, libp2pnoise.New),
 	libp2p.Security(libp2ptls.ID, libp2ptls.New),
-	libp2p.Transport(libp2pquic.NewTransport),
 	libp2p.DefaultTransports,
 }
 

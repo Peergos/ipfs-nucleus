@@ -1,7 +1,7 @@
 module github.com/peergos/ipfs-nucleus
 
 go 1.15
-          
+
 require (
 	github.com/ipfs/go-block-format v0.0.3
 	github.com/ipfs/go-cid v0.1.0
@@ -23,6 +23,7 @@ require (
 	github.com/libp2p/go-libp2p-core v0.9.0
 	github.com/libp2p/go-libp2p-http v0.2.1
 	github.com/libp2p/go-libp2p-kad-dht v0.13.1
+	github.com/libp2p/go-libp2p-noise v0.2.2
 	github.com/libp2p/go-libp2p-quic-transport v0.12.0
 	github.com/libp2p/go-libp2p-record v0.1.3
 	github.com/libp2p/go-libp2p-tls v0.2.0
@@ -32,5 +33,6 @@ require (
 	github.com/peergos/go-ds-s3 v0.7.10
 	github.com/peergos/go-ipfs-blockstore v0.1.8
 	github.com/peergos/go-ipfs-exchange-interface-auth v0.2.1
+	github.com/prometheus/client_golang v1.11.0
 	github.com/syndtr/goleveldb v1.0.0
 )
